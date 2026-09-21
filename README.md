@@ -5,7 +5,7 @@
 <h1 align="center">Switchboard</h1>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@ruban24/switchboard"><img src="https://img.shields.io/npm/v/@ruban24/switchboard?style=flat&amp;label=npm&amp;color=e9ad45&amp;labelColor=24292f" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@ruban24/switchboard"><img src="https://img.shields.io/npm/v/@ruban24/switchboard?style=flat&amp;label=npm&amp;color=brightgreen&amp;labelColor=24292f" alt="npm version"></a>
   <a href="https://github.com/ruban-24/switchboard/actions/workflows/verify.yml"><img src="https://github.com/ruban-24/switchboard/actions/workflows/verify.yml/badge.svg?branch=main" alt="CI status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-596574?style=flat&amp;labelColor=24292f" alt="License: Apache-2.0"></a>
   <a href="https://nodejs.org/en/download"><img src="https://img.shields.io/badge/Node.js-%E2%89%A522.18-417e38?style=flat&amp;logo=nodedotjs&amp;logoColor=white&amp;labelColor=24292f" alt="Node.js 22.18 or newer"></a>
