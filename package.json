@@ -1,7 +1,7 @@
 {
   "name": "@ruban24/switchboard",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "description": "Model and effort routing for coding agents, with Jev support",
   "type": "module",
   "engines": {
