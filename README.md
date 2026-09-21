@@ -12,22 +12,25 @@
 </p>
 
 <p align="center">
-  <strong>An open-source, model-agnostic decision router for Claude Code and Codex.</strong><br>
-  Describe the task. Let Switchboard choose the model and reasoning effort.
+  <strong>Open-source model and reasoning effort routing for coding agents.</strong><br>
+  Automatic model selection for Claude Code and Codex.
 </p>
 
 <p align="center">
   <a href="#get-started">Get started</a> &middot;
-  <a href="#how-reasoning-based-routing-works">How it works</a> &middot;
+  <a href="#how-model-and-reasoning-effort-routing-works">How it works</a> &middot;
   <a href="docs/customization.md">Customize your policy</a> &middot;
   <a href="CONTRIBUTING.md">Contribute</a>
 </p>
 
-If you default to the strongest model at maximum effort because you are unsure
-what a task needs, Switchboard makes that choice for you. It uses a System One
-model to assess the task's reasoning demands and applies your policy inside the
-coding CLI you already use. The selected model and effort stay fixed for the
-conversation to avoid disrupting its prompt cache.
+Switchboard automatically selects a model and reasoning effort for Claude Code
+and Codex using Jev's task assessment and your routing policy. It runs inside
+the coding CLI you already use, keeping the selected pair fixed through
+follow-ups, tool calls, and resume.
+
+Use it for implementation, debugging, code review, and documentation. You can
+also route writing, research, and other tasks inside those CLIs; the default
+routing criteria currently emphasize software engineering.
 
 <br>
 
@@ -46,7 +49,7 @@ conversation to avoid disrupting its prompt cache.
   model tiers, effort caps, confidence thresholds, and fallback behavior.
 - **Open source and free to use.** Apache-2.0. All Switchboard routing code is
   available to inspect, change, and run yourself. No Switchboard account or
-  subscription; classifier and coding-provider usage are billed separately.
+  subscription; classifier and native-provider usage are billed separately.
 - **Local control.** The proxy and route history run on your machine. No
   Switchboard telemetry or hosted routing service. Hosted Jev receives task
   text through your own API key; see [privacy and data flow](docs/privacy.md).
@@ -130,7 +133,9 @@ From a checkout, `npm run switchboard` also loads `.env.local` if present;
 those values override saved connection settings. Installed commands do not
 load project environment files.
 
-## How reasoning-based routing works
+<a name="how-reasoning-based-routing-works"></a>
+
+## How model and reasoning effort routing works
 
 Switchboard makes two related decisions:
 
@@ -149,7 +154,7 @@ the final choice.* [View the static diagram](assets/routing-overview.svg).
 
 The local proxy extracts the user task and sends one request to
 [Jev](https://docs.typesafe.ai/concepts/system-one). Jev returns structured answers
-and probabilities; the coding model still does the work.
+and probabilities; the selected model still does the work.
 
 Jev considers how familiar the work is, what remains uncertain, which constraints
 interact, and how much analysis is needed. These are criteria for its judgments,
@@ -169,7 +174,7 @@ Each judgment includes a confidence value from **0 to 1**:
 - Task-type and context confidence are recorded for diagnostics.
 
 Confidence describes how decisive the classification is, not the probability
-that the coding model will complete the task correctly.
+that the selected model will complete the task correctly.
 [TypeSafe explains confidence here](https://docs.typesafe.ai/confidence).
 
 ### Apply your policy
@@ -199,7 +204,7 @@ effort locally, then:
 - Can recommend a stronger route for a new conversation after a later user turn,
   without changing the active one.
 
-Routing explanations describe the policy decision. Review the coding result as
+Routing explanations describe the policy decision. Review the result as
 you normally would; a confident classification does not guarantee a correct answer.
 
 For implementation details, see the [architecture and routing rules](docs/routing.md),
@@ -230,6 +235,9 @@ Moving a conversation to another model can lose that reuse, so a cheaper model
 midway through a task can still produce a more expensive overall run.
 
 **Switchboard keeps both model and effort fixed for the whole conversation.**
+Although some providers offer model-specific cache-preserving effort updates,
+Switchboard has not yet verified and implemented them through its supported
+native CLI paths.
 
 - Follow-up prompts, tool calls, and resume keep the saved pair.
 - Start a new conversation for an independent task or a stronger-model recommendation.
@@ -328,13 +336,15 @@ your prompts. You control the code, keys, policy, and local route history.
 
 - **Classification:** the hosted classifier receives extracted task text,
   including any code or secrets you put in that prompt.
-- **Coding:** inference goes to your native provider.
+- **Native inference:** requests go to your native provider.
 - **Local logging:** raw-prompt logging is off by default. Native transcripts
   and provider retention are separate.
 
 Read [the data flow](docs/privacy.md) before using it with sensitive work.
 
-### Supported today
+<a name="supported-today"></a>
+
+### Supported coding agents and platforms
 
 - **Agents:** Claude Code and Codex in local interactive CLI sessions.
 - **Platforms:** macOS and Linux. Both adapters have passed interactive validation
@@ -342,12 +352,15 @@ Read [the data flow](docs/privacy.md) before using it with sensitive work.
 - **Classifier:** Jev through TypeSafe, Vercel AI Gateway, or OpenRouter.
 
 Native Windows, desktop-app routing, remote/background sessions, and custom
-coding-model gateways are outside v0. See [native CLI compatibility](docs/native-cli.md)
+model gateways are outside v0. See [native CLI compatibility](docs/native-cli.md)
 for tested versions and limitations.
 
 ## Future support
 
-### Coding agents
+<a name="coding-agents"></a>
+<a name="agent-integrations"></a>
+
+### Planned agent integrations
 
 - Pi (coming soon)
 - OpenCode (coming soon)
