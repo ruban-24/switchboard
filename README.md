@@ -1,10 +1,27 @@
-<img src="assets/switchboard-icon.png" alt="Switchboard icon" width="112" height="112">
+<p align="center">
+  <img src="assets/switchboard-icon.png" alt="Switchboard icon" width="224" height="224">
+</p>
 
-# Switchboard
+<h1 align="center">Switchboard</h1>
 
-**An open-source, model-agnostic decision router for Claude Code and Codex.**
+<p align="center">
+  <a href="https://www.npmjs.com/package/@ruban24/switchboard"><img src="https://img.shields.io/npm/v/@ruban24/switchboard?style=flat&amp;label=npm&amp;color=e9ad45&amp;labelColor=24292f" alt="npm version"></a>
+  <a href="https://github.com/ruban-24/switchboard/actions/workflows/verify.yml"><img src="https://github.com/ruban-24/switchboard/actions/workflows/verify.yml/badge.svg?branch=main" alt="CI status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-596574?style=flat&amp;labelColor=24292f" alt="License: Apache-2.0"></a>
+  <a href="https://nodejs.org/en/download"><img src="https://img.shields.io/badge/Node.js-%E2%89%A522.18-417e38?style=flat&amp;logo=nodedotjs&amp;logoColor=white&amp;labelColor=24292f" alt="Node.js 22.18 or newer"></a>
+</p>
 
-Describe the task. Let Switchboard choose the model and reasoning effort.
+<p align="center">
+  <strong>An open-source, model-agnostic decision router for Claude Code and Codex.</strong><br>
+  Describe the task. Let Switchboard choose the model and reasoning effort.
+</p>
+
+<p align="center">
+  <a href="#get-started">Get started</a> &middot;
+  <a href="#how-reasoning-based-routing-works">How it works</a> &middot;
+  <a href="docs/customization.md">Customize your policy</a> &middot;
+  <a href="CONTRIBUTING.md">Contribute</a>
+</p>
 
 If you default to the strongest model at maximum effort because you are unsure
 what a task needs, Switchboard makes that choice for you. It uses a System One
@@ -12,13 +29,17 @@ model to assess the task's reasoning demands and applies your policy inside the
 coding CLI you already use. The selected model and effort stay fixed for the
 conversation to avoid disrupting its prompt cache.
 
+<br>
+
 ![Switchboard automatically selects GPT-5.6 Terra with low effort for a linked-list task in Codex](assets/switchboard-codex-demo.gif)
+
+<br>
 
 *A real Codex session: submit a task and see Switchboard's model and effort choice.*
 
 - **Task-aware decisions.** Powered by Jev, a System One model built for fast,
   structured judgments. The routing policy is independent of the classifier;
-  adapters for Laya, Kev, and Cua-s1 are planned.
+  see [future support](#future-support) for planned additions.
 - **Stable conversations.** Model and effort stay fixed through tool calls,
   follow-ups, and resume. A new conversation gets a fresh routing decision.
 - **Your policy.** Use the defaults, exclude unavailable models, or customize
@@ -109,8 +130,7 @@ Switchboard does not treat them as interchangeable points on one scale.
 ![Animated routing flow: a System One model (Jev) assesses an LRU cache coding task, customizable local policy chooses the model and effort, then Switchboard pins the pair for the conversation](assets/switchboard-routing.gif)
 
 *Illustrative example: a System One model (Jev) supplies judgments and confidence; your policy makes
-the final choice.* [Static diagram](assets/routing-overview.svg) ·
-[MP4 version](assets/switchboard-routing.mp4)
+the final choice.* [View the static diagram](assets/routing-overview.svg).
 
 **What Jev assesses.** The local proxy extracts the user task and sends one
 request to Jev. It considers how familiar the work is, what remains uncertain,
@@ -275,20 +295,46 @@ sandboxing. See [native CLI compatibility](docs/native-cli.md) for tested versio
 Native Windows, desktop-app routing,
 remote/background sessions, and custom coding-model gateways are outside v0.
 
-Support for **other System One classifier models** and **more coding agents,
-including OpenCode and Pi**, is planned. Jev is the supported classifier today,
-through TypeSafe, Vercel AI Gateway, or OpenRouter. Laya, Kev, and Cua-s1 are
-planned additions; each will need an adapter for its judgments and confidence
-format. A new endpoint alone does not make a different model compatible.
+Jev is the supported classifier today, through TypeSafe, Vercel AI Gateway,
+or OpenRouter.
 
-## Contribute
+## Future support
+
+### Coding agents
+
+- Pi (coming soon)
+- OpenCode (coming soon)
+
+### System One models
+
+- Laya (coming soon)
+- Kev (coming soon)
+- Cua-S1 (coming soon)
+
+Each classifier needs an adapter for its judgments and confidence format.
+A new endpoint alone does not make a different model compatible.
+
+## Contribute and support
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, checks, native adapter guidance,
 and reporting routing problems. Run `npm test` and `npm run test:package` before
 submitting a code change. Report vulnerabilities as described in
 [SECURITY.md](SECURITY.md). Release notes are in [CHANGELOG.md](CHANGELOG.md).
 
+If you would like to support development, you can sponsor me or buy me a coffee.
+
+<p>
+  <a href="https://github.com/sponsors/ruban-24"><img src="https://img.shields.io/badge/GitHub-Sponsors-ea4aaa?style=flat&amp;logo=githubsponsors&amp;logoColor=white&amp;labelColor=24292f" alt="Support Ruban on GitHub Sponsors"></a>
+  <a href="https://buymeacoffee.com/rubanbhatia"><img src="https://img.shields.io/badge/Buy_me_a_coffee-e9ad45?style=flat&amp;logo=buymeacoffee&amp;logoColor=24292f" alt="Buy Ruban a coffee"></a>
+</p>
+
 ## License
 
 [Apache-2.0](LICENSE). Copyright 2026 Ruban. See [NOTICE](NOTICE) and
 [third-party licenses](THIRD_PARTY_NOTICES.md).
+
+---
+
+<p align="center">
+  If Switchboard helped you, please <a href="https://github.com/ruban-24/switchboard">give it a star ⭐</a>.
+</p>

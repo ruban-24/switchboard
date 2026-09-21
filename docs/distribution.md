@@ -190,7 +190,7 @@ platform, including native Linux sandbox execution before claiming Linux support
    Enable and verify GitHub private vulnerability reporting when making the
    source repository public.
 4. Update the version in both package files and set `private: false` only in the
-   authorized release candidate. `publishConfig.access` is already `public`.
+   authorized release package. `publishConfig.access` is already `public`.
    An isolated local packaging candidate can be prepared without publishing it;
    keep the development checkout private until publication is authorized.
 5. Complete contributor checks on the supported platforms. When the owner
@@ -278,11 +278,15 @@ settings, so grant repository access deliberately.
 See GitHub's [ruleset guide](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository)
 and [code-owner documentation](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners).
 
-## Release candidates
+## Optional release candidates
 
-Use `0.1.0-rc.1` for a public trial before the stable `0.1.0` release. Set the
-candidate version in both package files, set `private: false`, commit it, and
-wait for CI on that commit. Pack and inspect it using the sequence above.
+A release candidate is optional. With testing complete, publish `0.1.0` directly
+using the maintainer sequence above.
+
+For a public trial before a stable release, `0.1.0-rc.1` means the first release
+candidate for `0.1.0`. Set that version in both package files, set `private: false`,
+commit it, and wait for CI on that commit. Pack and inspect it using the sequence
+above.
 After publication is authorized, publish that exact archive under `next`:
 
 ```sh
