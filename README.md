@@ -26,7 +26,7 @@
 If you default to the strongest model at maximum effort because you are unsure
 what a task needs, Switchboard makes that choice for you. It uses a System One
 model to assess the task's reasoning demands and applies your policy inside the
-coding CLI you already use. The selected model and effort stay fixed for the
+native CLI you already use. The selected model and effort stay fixed for the
 conversation to avoid disrupting its prompt cache.
 
 <br>
@@ -46,7 +46,7 @@ conversation to avoid disrupting its prompt cache.
   model tiers, effort caps, confidence thresholds, and fallback behavior.
 - **Open source and free to use.** Apache-2.0. All Switchboard routing code is
   available to inspect, change, and run yourself. No Switchboard account or
-  subscription; classifier and coding-provider usage are billed separately.
+  subscription; classifier and native-provider usage are billed separately.
 - **Local control.** The proxy and route history run on your machine. No
   Switchboard telemetry or hosted routing service. Hosted Jev receives task
   text through your own API key; see [privacy and data flow](docs/privacy.md).
@@ -96,7 +96,7 @@ npx --package=@ruban24/switchboard switchboard claude
 
 `switchboard init` walks you through three choices:
 
-1. Detect installed coding agents and choose which to enable.
+1. Detect installed agents and choose which to enable.
 2. Select a Jev provider and enter your API key in a hidden prompt.
 3. Optionally add a configuration path to your shell profile.
 
@@ -140,7 +140,7 @@ Switchboard makes two related decisions:
 A stronger model at low effort and a smaller model at maximum effort are different
 choices. Switchboard does not treat them as interchangeable points on one scale.
 
-![Animated routing flow: a System One model (Jev) assesses an LRU cache coding task, customizable local policy chooses the model and effort, then Switchboard pins the pair for the conversation](assets/switchboard-routing.gif)
+![Animated routing flow: a System One model (Jev) assesses an LRU cache task, customizable local policy chooses the model and effort, then Switchboard pins the pair for the conversation](assets/switchboard-routing.gif)
 
 *Illustrative example: a System One model (Jev) supplies judgments and confidence; your policy makes
 the final choice.* [View the static diagram](assets/routing-overview.svg).
@@ -149,7 +149,7 @@ the final choice.* [View the static diagram](assets/routing-overview.svg).
 
 The local proxy extracts the user task and sends one request to
 [Jev](https://docs.typesafe.ai/concepts/system-one). Jev returns structured answers
-and probabilities; the coding model still does the work.
+and probabilities; the selected model still does the work.
 
 Jev considers how familiar the work is, what remains uncertain, which constraints
 interact, and how much analysis is needed. These are criteria for its judgments,
@@ -169,7 +169,7 @@ Each judgment includes a confidence value from **0 to 1**:
 - Task-type and context confidence are recorded for diagnostics.
 
 Confidence describes how decisive the classification is, not the probability
-that the coding model will complete the task correctly.
+that the selected model will complete the task correctly.
 [TypeSafe explains confidence here](https://docs.typesafe.ai/confidence).
 
 ### Apply your policy
@@ -199,7 +199,7 @@ effort locally, then:
 - Can recommend a stronger route for a new conversation after a later user turn,
   without changing the active one.
 
-Routing explanations describe the policy decision. Review the coding result as
+Routing explanations describe the policy decision. Review the result as
 you normally would; a confident classification does not guarantee a correct answer.
 
 For implementation details, see the [architecture and routing rules](docs/routing.md),
@@ -224,12 +224,15 @@ configured models support mappings for `low`, `medium`, `high`, `xhigh`, and
 
 ## Keep the cache useful
 
-Coding agents repeatedly send shared context: instructions, tool definitions,
+Agent CLIs repeatedly send shared context: instructions, tool definitions,
 conversation history, and code. Provider prompt caching can reuse that work.
 Moving a conversation to another model can lose that reuse, so a cheaper model
 midway through a task can still produce a more expensive overall run.
 
 **Switchboard keeps both model and effort fixed for the whole conversation.**
+Although some providers offer model-specific cache-preserving effort updates,
+Switchboard has not yet verified and implemented them through its supported
+native CLI paths.
 
 - Follow-up prompts, tool calls, and resume keep the saved pair.
 - Start a new conversation for an independent task or a stronger-model recommendation.
@@ -328,7 +331,7 @@ your prompts. You control the code, keys, policy, and local route history.
 
 - **Classification:** the hosted classifier receives extracted task text,
   including any code or secrets you put in that prompt.
-- **Coding:** inference goes to your native provider.
+- **Native inference:** requests go to your native provider.
 - **Local logging:** raw-prompt logging is off by default. Native transcripts
   and provider retention are separate.
 
@@ -342,12 +345,12 @@ Read [the data flow](docs/privacy.md) before using it with sensitive work.
 - **Classifier:** Jev through TypeSafe, Vercel AI Gateway, or OpenRouter.
 
 Native Windows, desktop-app routing, remote/background sessions, and custom
-coding-model gateways are outside v0. See [native CLI compatibility](docs/native-cli.md)
+model gateways are outside v0. See [native CLI compatibility](docs/native-cli.md)
 for tested versions and limitations.
 
 ## Future support
 
-### Coding agents
+### Agent integrations
 
 - Pi (coming soon)
 - OpenCode (coming soon)
