@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Switchboard — how routing works</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #0d1117; color: #e6edf3; font: 16px/1.5 'IBM Plex Sans', sans-serif; }
+      ::selection { background: #ffd65a; color: #0d1117; }
+      main { max-width: 1180px; padding: 20px 28px; margin: auto; }
+      video { display: block; width: 100%; max-height: calc(100vh - 165px); min-height: 220px; background: #0d1117; }
+      .timeline { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+      .timeline input { flex: 1; min-width: 0; accent-color: #ffd65a; }
+      .timeline output { min-width: 92px; font: 13px 'IBM Plex Mono', monospace; color: #a5afbd; }
+      nav { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 14px; }
+      button { border: 0; padding: 9px 18px; border-radius: 6px; background: #ffd65a; color: #0d1117; font: inherit; font-weight: 500; cursor: pointer; }
+      button:hover { background: #ffe58d; }
+      a { color: #c9d1d9; text-underline-offset: 4px; text-decoration-color: #748197; }
+      a:hover { color: #ffd65a; text-decoration-color: currentColor; }
+      :focus-visible { outline: 2px solid #c7b4f2; outline-offset: 4px; }
+      .note { margin: 12px 0 0; color: #a5afbd; font-size: 13px; }
+      @media (max-width: 600px) { main { padding: 16px; } video { max-height: none; min-height: 0; } nav { font-size: 14px; } }
+    </style>
+  </head>
+  <body>
+    <main aria-label="How Switchboard routes a coding task">
+      <video id="animation" controls playsinline preload="metadata" poster="/switchboard-routing-poster.png" aria-label="Animated explanation of Switchboard routing" aria-describedby="example-note">
+        <source src="/switchboard-routing.mp4" type="video/mp4">
+        <p><a href="/switchboard-routing.mp4">Download the routing animation.</a></p>
+      </video>
+      <div class="timeline" id="timeline" hidden>
+        <input id="seek" type="range" min="0" max="27" step="0.01" value="0" aria-label="Animation position in seconds">
+        <output id="time">0:00 / 0:27</output>
+      </div>
+      <nav aria-label="Animation controls and files">
+        <button id="play" type="button">Play animation</button>
+        <a href="/">Open Motion Canvas editor</a>
+        <a href="/switchboard-routing.mp4" download>Download MP4</a>
+        <a href="/switchboard-routing.gif" download>Download GIF</a>
+        <a href="/routing-overview.svg">Read the static diagram</a>
+      </nav>
+      <p class="note" id="example-note">Illustrative example and confidence values. Confidence is not a measured success probability. No audio.</p>
+    </main>
+    <script type="module">
+      import '@fontsource/ibm-plex-sans/latin-400.css';
+      import '@fontsource/ibm-plex-sans/latin-500.css';
+      import '@fontsource/ibm-plex-mono/latin-400.css';
+      const video = document.querySelector('#animation');
+      const button = document.querySelector('#play');
+      const seek = document.querySelector('#seek');
+      const time = document.querySelector('#time');
+      const clock = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+      // Keep controls outside the picture so they never hide the selected route.
+      video.controls = false;
+      document.querySelector('#timeline').hidden = false;
+      const updateTime = () => {
+        if (!Number.isFinite(video.duration)) return;
+        seek.max = video.duration;
+        seek.value = video.currentTime;
+        time.textContent = `${clock(video.currentTime)} / ${clock(video.duration)}`;
+      };
+      video.addEventListener('loadedmetadata', updateTime);
+      video.addEventListener('timeupdate', updateTime);
+      seek.addEventListener('input', () => { video.currentTime = Number(seek.value); });
+      updateTime();
+      button.addEventListener('click', async () => {
+        if (!video.paused) { video.pause(); return; }
+        if (video.ended) video.currentTime = 0;
+        try { await video.play(); } catch { button.textContent = 'Try playback again'; }
+      });
+      video.addEventListener('play', () => { button.textContent = 'Pause animation'; });
+      video.addEventListener('pause', () => { button.textContent = video.ended ? 'Replay animation' : 'Play animation'; });
+      video.addEventListener('ended', () => { button.textContent = 'Replay animation'; });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1168" viewBox="0 0 1000 1168" role="img" aria-labelledby="title description">
+  <title id="title">How Switchboard chooses a model and reasoning effort</title>
+  <desc id="description">Your task goes to a System One model (Jev) in one request. It assesses capability, sufficient context, effort for each eligible model, and task type, with confidence values. Local policy maps the capability to an allowed model, then uses that model's effort answer with confidence rules and effort limits. The chosen model and effort stay pinned across tool calls, follow-ups, and resume.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#ffd65a"/>
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; fill: #e6edf3; }
+      .title { font-size: 34px; font-weight: 700; letter-spacing: -0.8px; }
+      .step { font-size: 17px; font-weight: 700; letter-spacing: 1.4px; }
+      .heading { font-size: 23px; font-weight: 650; }
+      .body { font-size: 20px; }
+      .small { font-size: 18px; }
+      .muted { fill: #a5afbd; }
+      .blue { fill: #c7b4f2; }
+      .green { fill: #ffd65a; }
+      .connector { fill: none; stroke: #ffd65a; stroke-width: 2; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1000" height="1168" rx="16" fill="#0d1117"/>
+  <text x="40" y="57" class="title">System One assesses. Your policy decides.</text>
+  <text x="40" y="93" class="body muted">Switchboard chooses the model first, then the effort that model needs.</text>
+
+  <rect x="40" y="130" width="920" height="96" rx="12" fill="#161b22" stroke="#3b4452"/>
+  <text x="64" y="164" class="step muted">01 / YOUR TASK</text>
+  <text x="64" y="200" class="heading">Describe the work in Claude Code or Codex</text>
+  <path d="M500 226 V260" class="connector"/>
+
+  <rect x="40" y="270" width="920" height="354" rx="12" fill="#161b22" stroke="#3b4452"/>
+  <text x="64" y="307" class="step blue">02 / SYSTEM ONE MODEL (JEV)</text>
+  <text x="936" y="307" text-anchor="end" class="small blue">One hosted API request</text>
+  <text x="64" y="344" class="body">Considers reasoning difficulty, ambiguity, scope, and consequences.</text>
+
+  <line x1="64" y1="367" x2="936" y2="367" stroke="#3b4452"/>
+  <text x="64" y="400" class="heading">Capability needed</text>
+  <text x="64" y="430" class="small">Fast · Balanced · Strong · Highest</text>
+  <text x="536" y="400" class="heading">Enough context to classify?</text>
+  <text x="536" y="430" class="small">Yes or no</text>
+
+  <text x="64" y="483" class="heading">Effort for each eligible model</text>
+  <text x="64" y="513" class="small">Low · Medium · High · Xhigh · Max</text>
+  <text x="536" y="483" class="heading">Task type</text>
+  <text x="536" y="513" class="small">Explain, edit, implement, debug, …</text>
+  <text x="536" y="540" class="small muted">For diagnostics; does not set the tier.</text>
+
+  <line x1="64" y1="560" x2="936" y2="560" stroke="#3b4452"/>
+  <text x="64" y="597" class="body blue">Returns structured choices + confidence (0–1) for each judgment.</text>
+  <path d="M500 624 V657" class="connector"/>
+
+  <rect x="40" y="668" width="920" height="272" rx="12" fill="#161b22" stroke="#3b4452"/>
+  <text x="64" y="705" class="step muted">03 / YOUR POLICY · APPLIED LOCALLY</text>
+  <text x="936" y="705" text-anchor="end" class="small muted">Defaults + personal overrides</text>
+
+  <text x="64" y="750" class="heading">Choose the model</text>
+  <text x="64" y="786" class="body">Map capability to a model.</text>
+  <text x="64" y="816" class="body">Apply confidence rules and exclusions.</text>
+  <text x="64" y="846" class="body">Use fallback if classification is unavailable</text>
+  <text x="64" y="872" class="body">or the task cannot be classified.</text>
+
+  <path d="M487 765 H517" class="connector"/>
+  <text x="544" y="750" class="heading">Choose its effort</text>
+  <text x="544" y="786" class="body">Read that model’s effort answer.</text>
+  <text x="544" y="816" class="body">Apply confidence rules and defaults.</text>
+  <text x="544" y="846" class="body">Apply your effort mappings / caps.</text>
+  <text x="544" y="872" class="small muted">Haiku receives no effort parameter.</text>
+
+  <text x="64" y="916" class="small muted">Default confidence thresholds: 0.70 for capability and effort.</text>
+  <path d="M500 940 V973" class="connector"/>
+
+  <rect x="40" y="984" width="920" height="114" rx="12" fill="#1f211e" stroke="#ffd65a"/>
+  <text x="64" y="1020" class="step green">04 / SELECTED MODEL + EFFORT → YOUR CODING PROVIDER</text>
+  <text x="64" y="1054" class="heading green">Pinned for the conversation to avoid model-switch cache disruption.</text>
+  <text x="64" y="1082" class="small green">Tool calls · follow-ups · resume — same model and effort.</text>
+
+  <text x="500" y="1141" text-anchor="middle" class="small muted">A harder follow-up can suggest a new conversation. It does not switch the active route.</text>
+</svg>

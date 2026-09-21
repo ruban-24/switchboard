@@ -1,0 +1,22 @@
+node_modules/
+dist/
+.test-build/
+.env
+.env.*
+!.env.example
+*.tgz
+.DS_Store
+coverage/
+release/
+
+# Local credentials, agent tooling, and interactive UAT workspaces
+/.npmrc
+/.agents/
+/.claude/
+/.codex/
+/.superpowers/
+/skills-lock.json
+/uat-scratch*/
+
+# Regenerable Motion Canvas renders
+/media/routing-animation/output/

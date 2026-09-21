@@ -1,0 +1,18 @@
+export * from './core/types.ts';
+export { mergePolicy, parsePolicy, validateMappings } from './core/config.ts';
+export { parseCatalog, findCompatibility, canChangeEffort } from './core/catalog.ts';
+export { parseClassification, selectInitialRoute, assessInitialRoute, isUncertain, isModelUncertain } from './core/policy.ts';
+export { Router } from './core/session.ts';
+export type { ConversationRepository, RoutingDependencies, TurnInput } from './core/session.ts';
+export { normalizeUsage } from './core/usage.ts';
+export { Store } from './storage.ts';
+export { defaultPolicy, bundledCatalog, eligibleFamilies, modelTiers } from './defaults.ts';
+export { createJevClassifier, createVercelJevClassifier } from './jev.ts';
+export type { JevClient } from './jev.ts';
+export { classifierStatus, createConfiguredClassifier } from './classifier.ts';
+export { startProxy, AUTO_MODEL, TOKEN_HEADER, TOKEN_ENV } from './native/proxy.ts';
+export type { ProxyHandle, ProxyOptions } from './native/proxy.ts';
+export { UsageStore } from './native/usage-store.ts';
+export { nativeBypassesRouting, prepareNativeLaunch, runPreparedNative, validateNativeAutomatic } from './native/launcher.ts';
+export type { NativeProxyDetails, PrepareNativeLaunchOptions, PreparedNativeLaunch, NativeRunnerDependencies } from './native/launcher.ts';
+export { explainDecision } from './core/explanation.ts';

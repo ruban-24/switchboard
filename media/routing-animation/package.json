@@ -1,0 +1,31 @@
+{
+  "name": "switchboard-routing-animation",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "vite --host 127.0.0.1 --port 9000 --strictPort",
+    "build": "vite build",
+    "check": "tsc --noEmit",
+    "export:assets": "node scripts/export-assets.mjs"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@motion-canvas/2d": "3.17.2",
+    "@motion-canvas/core": "3.17.2",
+    "@motion-canvas/ui": "3.17.2"
+  },
+  "devDependencies": {
+    "@motion-canvas/ffmpeg": "3.17.2",
+    "@motion-canvas/vite-plugin": "3.17.2",
+    "typescript": "5.9.3",
+    "vite": "6.4.3"
+  },
+  "overrides": {
+    "@motion-canvas/vite-plugin": {
+      "vite": "$vite"
+    },
+    "@xmldom/xmldom": "0.9.12"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "name": "@ruban24/switchboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Model and effort routing for coding agents, with Jev support",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "bin": {
+    "switchboard": "bin/switchboard.mjs"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "bin/switchboard.mjs",
+    "dist",
+    "docs/routing.md",
+    "docs/customization.md",
+    "docs/privacy.md",
+    "docs/native-cli.md",
+    "docs/model-catalog.md",
+    "docs/classifiers.md",
+    "docs/distribution.md",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "check": "tsc -p tsconfig.check.json",
+    "build": "tsc -p tsconfig.json",
+    "check:jev": "node --env-file-if-exists=.env.local scripts/check-jev.mjs",
+    "test:package": "npm run check && npm run build && node scripts/package-smoke.mjs",
+    "homebrew:formula": "node scripts/homebrew-formula.mjs",
+    "prepack": "npm run check && npm run build",
+    "switchboard": "node --env-file-if-exists=.env.local bin/switchboard.mjs"
+  },
+  "devDependencies": {
+    "@types/json-schema": "7.0.15",
+    "@types/node": "^22.18.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@typesafe-ai/sdk": "0.6.0",
+    "ai": "7.0.106",
+    "smol-toml": "^1.8.0"
+  },
+  "license": "Apache-2.0",
+  "author": "Ruban",
+  "homepage": "https://github.com/ruban-24/switchboard",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruban-24/switchboard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ruban-24/switchboard/issues"
+  },
+  "keywords": [
+    "switchboard",
+    "jev",
+    "system-one",
+    "model-router",
+    "model-routing",
+    "ai-model-router",
+    "claude-code",
+    "codex",
+    "reasoning-effort",
+    "cli"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ]
+}
