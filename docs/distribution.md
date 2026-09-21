@@ -219,7 +219,7 @@ platform, including native Linux sandbox execution before claiming Linux support
    repacking it:
 
    ```sh
-   npm publish release/ACTUAL_PACKAGE_FILE.tgz --access public
+   npm publish ./release/ACTUAL_PACKAGE_FILE.tgz --access public
    ```
 
 8. Verify global npm and npx against that public version. Test the generated
@@ -290,7 +290,7 @@ above.
 After publication is authorized, publish that exact archive under `next`:
 
 ```sh
-npm publish release/ruban24-switchboard-0.1.0-rc.1.tgz --tag next --access public
+npm publish ./release/ruban24-switchboard-0.1.0-rc.1.tgz --tag next --access public
 ```
 
 Testers opt in with `npm install -g @ruban24/switchboard@next` or
