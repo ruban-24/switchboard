@@ -12,22 +12,25 @@
 </p>
 
 <p align="center">
-  <strong>An open-source, model-agnostic decision router for Claude Code and Codex.</strong><br>
-  Describe the task. Let Switchboard choose the model and reasoning effort.
+  <strong>Open-source model and reasoning effort routing for coding agents.</strong><br>
+  Automatic model selection for Claude Code and Codex.
 </p>
 
 <p align="center">
   <a href="#get-started">Get started</a> &middot;
-  <a href="#how-reasoning-based-routing-works">How it works</a> &middot;
+  <a href="#how-model-and-reasoning-effort-routing-works">How it works</a> &middot;
   <a href="docs/customization.md">Customize your policy</a> &middot;
   <a href="CONTRIBUTING.md">Contribute</a>
 </p>
 
-If you default to the strongest model at maximum effort because you are unsure
-what a task needs, Switchboard makes that choice for you. It uses a System One
-model to assess the task's reasoning demands and applies your policy inside the
-native CLI you already use. The selected model and effort stay fixed for the
-conversation to avoid disrupting its prompt cache.
+Switchboard automatically selects a model and reasoning effort for Claude Code
+and Codex using Jev's task assessment and your routing policy. It runs inside
+the coding CLI you already use, keeping the selected pair fixed through
+follow-ups, tool calls, and resume.
+
+Use it for implementation, debugging, code review, and documentation. You can
+also route writing, research, and other tasks inside those CLIs; the default
+routing criteria currently emphasize software engineering.
 
 <br>
 
@@ -96,7 +99,7 @@ npx --package=@ruban24/switchboard switchboard claude
 
 `switchboard init` walks you through three choices:
 
-1. Detect installed agents and choose which to enable.
+1. Detect installed coding agents and choose which to enable.
 2. Select a Jev provider and enter your API key in a hidden prompt.
 3. Optionally add a configuration path to your shell profile.
 
@@ -130,7 +133,9 @@ From a checkout, `npm run switchboard` also loads `.env.local` if present;
 those values override saved connection settings. Installed commands do not
 load project environment files.
 
-## How reasoning-based routing works
+<a name="how-reasoning-based-routing-works"></a>
+
+## How model and reasoning effort routing works
 
 Switchboard makes two related decisions:
 
@@ -140,7 +145,7 @@ Switchboard makes two related decisions:
 A stronger model at low effort and a smaller model at maximum effort are different
 choices. Switchboard does not treat them as interchangeable points on one scale.
 
-![Animated routing flow: a System One model (Jev) assesses an LRU cache task, customizable local policy chooses the model and effort, then Switchboard pins the pair for the conversation](assets/switchboard-routing.gif)
+![Animated routing flow: a System One model (Jev) assesses an LRU cache coding task, customizable local policy chooses the model and effort, then Switchboard pins the pair for the conversation](assets/switchboard-routing.gif)
 
 *Illustrative example: a System One model (Jev) supplies judgments and confidence; your policy makes
 the final choice.* [View the static diagram](assets/routing-overview.svg).
@@ -224,7 +229,7 @@ configured models support mappings for `low`, `medium`, `high`, `xhigh`, and
 
 ## Keep the cache useful
 
-Agent CLIs repeatedly send shared context: instructions, tool definitions,
+Coding agents repeatedly send shared context: instructions, tool definitions,
 conversation history, and code. Provider prompt caching can reuse that work.
 Moving a conversation to another model can lose that reuse, so a cheaper model
 midway through a task can still produce a more expensive overall run.
@@ -337,7 +342,9 @@ your prompts. You control the code, keys, policy, and local route history.
 
 Read [the data flow](docs/privacy.md) before using it with sensitive work.
 
-### Supported today
+<a name="supported-today"></a>
+
+### Supported coding agents and platforms
 
 - **Agents:** Claude Code and Codex in local interactive CLI sessions.
 - **Platforms:** macOS and Linux. Both adapters have passed interactive validation
@@ -350,7 +357,10 @@ for tested versions and limitations.
 
 ## Future support
 
-### Agent integrations
+<a name="coding-agents"></a>
+<a name="agent-integrations"></a>
+
+### Planned agent integrations
 
 - Pi (coming soon)
 - OpenCode (coming soon)
