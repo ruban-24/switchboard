@@ -17,6 +17,7 @@
 </p>
 
 <p align="center">
+  <a href="https://tryswitchboard.dev">Website</a> &middot;
   <a href="#get-started">Get started</a> &middot;
   <a href="#how-model-and-reasoning-effort-routing-works">How it works</a> &middot;
   <a href="docs/customization.md">Customize your policy</a> &middot;
