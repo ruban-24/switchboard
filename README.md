@@ -35,7 +35,7 @@ routing criteria currently emphasize software engineering.
 
 <br>
 
-![Switchboard automatically selects GPT-5.6 Terra with low effort for a linked-list task in Codex](assets/switchboard-codex-demo.gif)
+![Switchboard automatically selects GPT-5.6 Terra with low effort for a routine slugify task in Codex](assets/switchboard-routine-demo.gif)
 
 <br>
 
