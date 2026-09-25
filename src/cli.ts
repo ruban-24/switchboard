@@ -74,9 +74,11 @@ function describeDefaults(): void {
 
 function describeClassifier(env: NodeJS.ProcessEnv): boolean {
   const status = classifierStatus(env);
-  console.log(`Jev classifier: ${status.label} (${status.modelId}).`);
-  console.log(`Jev credential: ${status.credentialPresent ? 'present' : 'missing'} (not tested); ${status.credentialEnvironment}.`);
-  return status.credentialPresent;
+  const name = status.provider === 'laya' ? 'Laya' : 'Jev';
+  console.log(`${name} classifier: ${status.label} (${status.modelId}${status.provider === 'laya' ? ` at ${status.baseURL}` : ''}).`);
+  const credential = status.credentialPresent ? 'present' : status.credentialRequired ? 'missing' : 'not set (optional for a server on this machine)';
+  console.log(`${name} credential: ${credential} (not tested); ${status.credentialEnvironment}.`);
+  return status.credentialPresent || !status.credentialRequired;
 }
 
 async function init(root: string, args: string[]): Promise<number> {
@@ -101,9 +103,9 @@ async function init(root: string, args: string[]): Promise<number> {
       const answer = await choose('Enable 1) Claude 2) Codex 3) Both', ['1', '2', '3'], fallback);
       enabledTools = answer === '1' ? ['claude'] : answer === '2' ? ['codex'] : [...v.tools];
     }
-    console.log('\nJev connection:\n  1) TypeSafe\n  2) Vercel AI Gateway\n  3) OpenRouter\n  4) Custom TypeSafe-compatible endpoint');
-    const providerChoice = await choose('Provider', ['1', '2', '3', '4'], initialClassifier.provider === 'vercel' ? '2' : initialClassifier.provider === 'openrouter' ? '3' : env.SWITCHBOARD_BASE_URL || env.TYPESAFE_BASE_URL ? '4' : '1');
-    const provider = providerChoice === '2' ? 'vercel' : providerChoice === '3' ? 'openrouter' : 'typesafe';
+    console.log('\nClassifier connection:\n  1) TypeSafe (Jev)\n  2) Vercel AI Gateway (Jev)\n  3) OpenRouter (Jev)\n  4) Custom TypeSafe-compatible endpoint (Jev)\n  5) Self-hosted Laya (laya-serve)');
+    const providerChoice = await choose('Provider', ['1', '2', '3', '4', '5'], initialClassifier.provider === 'vercel' ? '2' : initialClassifier.provider === 'openrouter' ? '3' : initialClassifier.provider === 'laya' ? '5' : env.SWITCHBOARD_BASE_URL || env.TYPESAFE_BASE_URL ? '4' : '1');
+    const provider = providerChoice === '2' ? 'vercel' : providerChoice === '3' ? 'openrouter' : providerChoice === '5' ? 'laya' : 'typesafe';
     const selectedEnv: NodeJS.ProcessEnv = { SWITCHBOARD_PROVIDER: provider };
     const sameProvider = provider === initialClassifier.provider;
     if (sameProvider) for (const key of credentialKeys(provider)) selectedEnv[key] = env[key];
@@ -113,18 +115,25 @@ async function init(root: string, args: string[]): Promise<number> {
       selectedEnv.SWITCHBOARD_BASE_URL = await ask(`Base URL${defaultURL ? ` [${defaultURL}]` : ''}: `) || defaultURL;
       if (!selectedEnv.SWITCHBOARD_BASE_URL) throw new Error('A custom endpoint requires a base URL');
     }
+    if (provider === 'laya') {
+      console.log('Laya runs on your own server. Keep laya-serve on this machine (LAYA_HOST=127.0.0.1); reach another host over HTTPS or an SSH tunnel.');
+      const defaultURL = (sameProvider ? env.SWITCHBOARD_BASE_URL : undefined) || classifierStatus(selectedEnv).baseURL;
+      selectedEnv.SWITCHBOARD_BASE_URL = await ask(`Laya server URL [${defaultURL}]: `) || defaultURL;
+    }
     const defaultModel = sameProvider ? env.SWITCHBOARD_MODEL || (provider === 'typesafe' ? env.TYPESAFE_DEFAULT_MODEL : undefined) : undefined;
     if (defaultModel) selectedEnv.SWITCHBOARD_MODEL = defaultModel;
     const status = classifierStatus(selectedEnv);
-    selectedEnv.SWITCHBOARD_MODEL = await ask(`Jev model [${status.modelId}]: `) || status.modelId;
-    classifierStatus(selectedEnv);
+    selectedEnv.SWITCHBOARD_MODEL = await ask(`${provider === 'laya' ? 'Laya' : 'Jev'} model [${status.modelId}]: `) || status.modelId;
+    const { credentialRequired } = classifierStatus(selectedEnv);
     const existingKey = credentialKeys(provider).map(key => selectedEnv[key]?.trim()).find(Boolean);
     let apiKey = '';
-    while (!apiKey) {
-      apiKey = await ask(`API key (hidden${existingKey ? '; Enter keeps the current key' : ''}): `, true) || existingKey || '';
-      if (!apiKey) console.log('An API key is required. Press Ctrl+C to cancel.');
+    for (;;) {
+      const hint = existingKey ? '; Enter keeps the current key' : credentialRequired ? '' : '; optional for a server on this machine, Enter skips';
+      apiKey = await ask(`API key (hidden${hint}): `, true) || existingKey || '';
+      if (apiKey || !credentialRequired) break;
+      console.log(provider === 'laya' ? 'A Laya server on another host requires an API key. Press Ctrl+C to cancel.' : 'An API key is required. Press Ctrl+C to cancel.');
     }
-    connection = { version: 1, provider, apiKey, model: selectedEnv.SWITCHBOARD_MODEL,
+    connection = { version: 1, provider, ...(apiKey ? { apiKey } : {}), model: selectedEnv.SWITCHBOARD_MODEL,
       ...(selectedEnv.SWITCHBOARD_BASE_URL ? { baseURL: selectedEnv.SWITCHBOARD_BASE_URL } : {}) };
     const suggested = await recommendedProfiles();
     console.log('Setup will save your key privately in connection.json. The CLI reads it automatically; no shell restart is needed.');

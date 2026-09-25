@@ -30,6 +30,17 @@ test('saved connection is private and works without shell exports', async t => {
   assert.equal(env.PATH, '/bin');
 });
 
+test('a keyless Laya connection is valid only for Laya and sets no credential', async t => {
+  const root = await sandbox(t);
+  await saveConnection(root, { version: 1, provider: 'laya', baseURL: 'http://127.0.0.1:8000', model: 'english' });
+  const env = await connectionEnvironment(root, {});
+  assert.equal(env.SWITCHBOARD_PROVIDER, 'laya');
+  assert.equal(env.SWITCHBOARD_BASE_URL, 'http://127.0.0.1:8000');
+  assert.equal(env.SWITCHBOARD_API_KEY, undefined);
+  assert.equal((await connectionEnvironment(root, { LAYA_API_KEY: 'shell-key' })).LAYA_API_KEY, 'shell-key');
+  await assert.rejects(saveConnection(root, { version: 1, provider: 'typesafe', model: 'jev-latest' }), /Invalid Switchboard connection settings/);
+});
+
 test('changing provider cannot reuse a saved provider key, model, or endpoint', async t => {
   const root = await sandbox(t);
   await saveConnection(root, { version: 1, provider: 'openrouter', apiKey: 'old-private-key', baseURL: 'https://openrouter.ai/api', model: 'jev-latest' });

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { parse as parseToml } from 'smol-toml';
 import type { Tool } from '../core/types.ts';
 import { AUTO_MODEL, TOKEN_ENV, TOKEN_HEADER } from './protocol.ts';
+import { classifierSecretKeys } from '../settings.ts';
 
 export interface NativeProxyDetails { url: string; token: string }
 export interface PrepareNativeLaunchOptions {
@@ -260,7 +261,7 @@ async function claudeRootLocalSettings(home: string, cwd: string, env: NodeJS.Pr
     // Git documents that its first NUL-delimited worktree record is the main
     // checkout. This also handles linked worktrees and separate Git directories.
     const gitEnv: NodeJS.ProcessEnv = { ...env, PATH: env.PATH ?? process.env.PATH, GIT_OPTIONAL_LOCKS: '0' };
-    for (const key of ['OPENROUTER_API_KEY', 'SWITCHBOARD_API_KEY', 'JEV_API_KEY', 'TYPESAFE_API_KEY', 'AI_GATEWAY_API_KEY']) delete gitEnv[key];
+    for (const key of classifierSecretKeys) delete gitEnv[key];
     const output = await new Promise<string>((resolveOutput, reject) => {
       execFile('git', ['-c', 'core.hooksPath=/dev/null', 'worktree', 'list', '--porcelain', '-z'], {
         cwd, env: gitEnv, timeout: 1000, maxBuffer: 64 * 1024, encoding: 'utf8',
@@ -389,7 +390,7 @@ async function prepareCodex(args: string[], env: NodeJS.ProcessEnv, proxy: Nativ
 
 export async function prepareNativeLaunch(options: PrepareNativeLaunchOptions): Promise<PreparedNativeLaunch> {
   const env: NodeJS.ProcessEnv = { ...(options.env ?? process.env) };
-  for (const key of ['OPENROUTER_API_KEY', 'SWITCHBOARD_API_KEY', 'JEV_API_KEY', 'TYPESAFE_API_KEY', 'AI_GATEWAY_API_KEY']) delete env[key];
+  for (const key of classifierSecretKeys) delete env[key];
   if (bypass(options.tool, options.args)) return { mode: 'bypass', args: [...options.args], env: { ...env, JEV_API_KEY: undefined, TYPESAFE_API_KEY: undefined }, cleanup: noop };
   rejectUnsupportedMode(options.tool, options.args);
   const home = options.home ?? env.HOME ?? homedir();

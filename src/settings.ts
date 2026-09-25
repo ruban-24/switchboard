@@ -5,8 +5,9 @@ import { atomicJsonWrite } from './storage.ts';
 
 export interface Connection {
   version: 1;
-  provider: 'typesafe' | 'vercel' | 'openrouter';
-  apiKey: string;
+  provider: 'typesafe' | 'vercel' | 'openrouter' | 'laya';
+  /** Optional only for Laya; the classifier requires it unless the server is loopback. */
+  apiKey?: string;
   baseURL?: string;
   model?: string;
 }
@@ -19,9 +20,9 @@ export function stateDirectory(env: NodeJS.ProcessEnv = process.env, home = home
 function parseConnection(value: unknown): Connection {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid connection');
   const c = value as Record<string, unknown>;
-  if (Object.keys(c).some(key => !['version', 'provider', 'apiKey', 'baseURL', 'model'].includes(key)) || c.version !== 1 || !['typesafe', 'vercel', 'openrouter'].includes(String(c.provider))) throw new Error('Invalid connection');
+  if (Object.keys(c).some(key => !['version', 'provider', 'apiKey', 'baseURL', 'model'].includes(key)) || c.version !== 1 || !['typesafe', 'vercel', 'openrouter', 'laya'].includes(String(c.provider))) throw new Error('Invalid connection');
   for (const field of ['apiKey', 'baseURL', 'model'] as const) {
-    if (c[field] === undefined && field !== 'apiKey') continue;
+    if (c[field] === undefined && (field !== 'apiKey' || c.provider === 'laya')) continue;
     if (typeof c[field] !== 'string' || !c[field].trim() || c[field].length > 8192 || /[\x00-\x1f\x7f]/.test(c[field])) throw new Error('Invalid connection');
   }
   return c as unknown as Connection;
@@ -45,8 +46,12 @@ export async function saveConnection(root: string, value: Connection): Promise<v
 }
 
 export function credentialKeys(provider: string): string[] {
-  return ['SWITCHBOARD_API_KEY', ...(provider === 'typesafe' ? ['JEV_API_KEY', 'TYPESAFE_API_KEY'] : provider === 'vercel' ? ['AI_GATEWAY_API_KEY'] : provider === 'openrouter' ? ['OPENROUTER_API_KEY'] : [])];
+  return ['SWITCHBOARD_API_KEY', ...(provider === 'typesafe' ? ['JEV_API_KEY', 'TYPESAFE_API_KEY'] : provider === 'vercel' ? ['AI_GATEWAY_API_KEY']
+    : provider === 'openrouter' ? ['OPENROUTER_API_KEY'] : provider === 'laya' ? ['LAYA_API_KEY'] : [])];
 }
+
+/** Every classifier credential variable; removed from native CLI and helper environments. */
+export const classifierSecretKeys: readonly string[] = [...new Set(['typesafe', 'vercel', 'openrouter', 'laya'].flatMap(credentialKeys))];
 
 /** Shell values override saved settings; switching providers never inherits a different provider's key. */
 export async function connectionEnvironment(root: string, env: NodeJS.ProcessEnv = process.env): Promise<NodeJS.ProcessEnv> {
@@ -54,13 +59,13 @@ export async function connectionEnvironment(root: string, env: NodeJS.ProcessEnv
   // Empty placeholders in .env files have the same meaning as an unset option
   // in the adapters. They must not hide credentials saved by interactive init.
   const optionalKeys = ['SWITCHBOARD_PROVIDER', 'SWITCHBOARD_MODEL', 'SWITCHBOARD_BASE_URL', 'TYPESAFE_DEFAULT_MODEL', 'TYPESAFE_BASE_URL',
-    ...credentialKeys('typesafe'), ...credentialKeys('vercel'), ...credentialKeys('openrouter')];
+    ...classifierSecretKeys];
   for (const key of optionalKeys) if (env[key] !== undefined && !env[key]!.trim()) delete env[key];
   const saved = await readConnection(root);
   const explicitProvider = env.SWITCHBOARD_PROVIDER === undefined ? undefined : env.SWITCHBOARD_PROVIDER.trim() || 'typesafe';
   if (!saved || (explicitProvider !== undefined && explicitProvider !== saved.provider)) return { ...env };
   const defaults: NodeJS.ProcessEnv = { SWITCHBOARD_PROVIDER: saved.provider };
-  if (!credentialKeys(saved.provider).some(key => env[key] !== undefined)) defaults.SWITCHBOARD_API_KEY = saved.apiKey;
+  if (saved.apiKey && !credentialKeys(saved.provider).some(key => env[key] !== undefined)) defaults.SWITCHBOARD_API_KEY = saved.apiKey;
   if (saved.model && env.SWITCHBOARD_MODEL === undefined && !(saved.provider === 'typesafe' && env.TYPESAFE_DEFAULT_MODEL !== undefined)) defaults.SWITCHBOARD_MODEL = saved.model;
   if (saved.baseURL && env.SWITCHBOARD_BASE_URL === undefined && !(saved.provider === 'typesafe' && env.TYPESAFE_BASE_URL !== undefined)) defaults.SWITCHBOARD_BASE_URL = saved.baseURL;
   return { ...defaults, ...env };

@@ -128,16 +128,16 @@ test('provider warnings cannot write raw payloads to the terminal or a global SD
 test('provider selection is explicit, credential status is safe, and TypeSafe remains the default', () => {
   assert.deepEqual(classifierStatus({ JEV_API_KEY: 'typesafe-secret', AI_GATEWAY_API_KEY: 'gateway-secret' }), {
     provider: 'typesafe', label: 'TypeSafe', adapter: 'typesafe-system-one', modelId: 'jev-latest', baseURL: 'https://api.typesafe.ai',
-    credentialEnvironment: 'JEV_API_KEY or TYPESAFE_API_KEY or SWITCHBOARD_API_KEY', credentialPresent: true,
+    credentialEnvironment: 'JEV_API_KEY or TYPESAFE_API_KEY or SWITCHBOARD_API_KEY', credentialRequired: true, credentialPresent: true,
   });
   assert.deepEqual(classifierStatus({ SWITCHBOARD_PROVIDER: 'vercel', AI_GATEWAY_API_KEY: 'gateway-secret' }), {
     provider: 'vercel', label: 'Vercel AI Gateway', adapter: 'vercel-evaluation', modelId: 'typesafe-ai/jev', baseURL: 'https://ai-gateway.vercel.sh/v4/ai',
-    credentialEnvironment: 'AI_GATEWAY_API_KEY or SWITCHBOARD_API_KEY', credentialPresent: true,
+    credentialEnvironment: 'AI_GATEWAY_API_KEY or SWITCHBOARD_API_KEY', credentialRequired: true, credentialPresent: true,
   });
   assert.equal(classifierStatus({ SWITCHBOARD_PROVIDER: 'vercel', JEV_API_KEY: 'wrong-provider' }).credentialPresent, false);
   assert.equal(classifierStatus({ SWITCHBOARD_PROVIDER: 'vercel', AI_GATEWAY_API_KEY: '  ' }).credentialPresent, false);
   assert.equal(classifierStatus({ TYPESAFE_API_KEY: 'old-name' }).credentialPresent, true);
-  assert.throws(() => classifierStatus({ SWITCHBOARD_PROVIDER: 'private-invalid-value' }), /^Error: SWITCHBOARD_PROVIDER must be typesafe, vercel, or openrouter$/);
+  assert.throws(() => classifierStatus({ SWITCHBOARD_PROVIDER: 'private-invalid-value' }), /^Error: SWITCHBOARD_PROVIDER must be typesafe, vercel, openrouter, or laya$/);
   assert.throws(() => createConfiguredClassifier({ SWITCHBOARD_PROVIDER: 'vercel', JEV_API_KEY: 'wrong-provider' }), /Set AI_GATEWAY_API_KEY/);
   assert.throws(() => createVercelJevClassifier(' '), /Set AI_GATEWAY_API_KEY/);
 });
