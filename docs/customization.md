@@ -32,9 +32,10 @@ it. Combine the examples below in one JSON object, keeping one `routing`,
 | What you want | Change | Effect on new automatic conversations |
 | --- | --- | --- |
 | Accept more cheaper-model proposals | Lower `classifier.modelMinConfidence` | Fewer low-confidence `routine` judgments are raised to the `standard` profile. It does not downgrade a `complex` judgment. |
-| Use stronger models for everyday tasks | Map `routing.claude.standard` to `claude-opus`, or `routing.codex.standard` to `codex-sol` | A task classified as `standard` selects Opus or Sol; effort is assessed for that model. |
+| Use stronger models for everyday tasks | Map `routing.claude.standard` to `claude-opus`, or `routing.codex.standard` to `codex-astra` | A task classified as `standard` selects Opus or Astra; effort is assessed for that model. Codex already uses Sol for `standard`; mapping it to `codex-sol` only raises the uncertain-effort default to high. |
+| Keep GPT-5.6 Terra for everyday Codex tasks | Map `routing.codex.standard` to `codex-terra` | Standard tasks use Terra while your Codex still offers it. |
 | Avoid the smallest model altogether | Map `routine` to a stronger profile, or exclude Haiku/Luna | Routine tasks use the replacement profile or next eligible tier. |
-| Avoid a model your plan cannot access | Add its model ID to `excludedModels` | Automatic selection skips it; excluding every routed model is an error. |
+| Avoid a model your plan cannot access | Add its model ID to `excludedModels`, or run `switchboard doctor --fix` | Automatic selection skips it; excluding every routed model is an error. |
 | Accept more lower-effort proposals | Lower `classifier.effortMinConfidence` | Fewer proposals are raised to the selected profile's default reasoning. Model selection is unchanged. |
 | Use less effort on a particular model | Map its `xhigh` and `max` effort labels to `high` | Those judgments send `high` to the provider, even when Jev is confident. |
 | Require more effort on a particular model | Map its `low` and `medium` labels to `high` | Low/medium judgments send `high`; other mappings stay unchanged. Haiku cannot accept effort. |
@@ -125,7 +126,7 @@ exclusions. The first two rows change `modelMinConfidence`; the last two change
 
 | Jev judgment | Threshold `0.70` | Threshold `0.50` |
 | --- | --- | --- |
-| `routine` with model confidence `0.60` | Sonnet / Terra model minimum | Haiku / Luna model accepted |
+| `routine` with model confidence `0.60` | Sonnet / Sol model minimum | Haiku / Luna model accepted |
 | `complex` with model confidence `0.60` | Opus / Sol retained | Opus / Sol retained |
 | Sonnet effort `low` with effort confidence `0.60` | Sonnet `medium` | Sonnet `low` |
 | Sonnet effort `max` with effort confidence `0.60` | Sonnet `max` | Sonnet `max` |
@@ -146,7 +147,8 @@ Lower thresholds do not disable fallback on a failed request, invalid required
 answer, insufficient context, or truncated input. Effort caps still apply.
 
 **Use stronger models more often.** Change the capability-to-profile mapping.
-This uses Opus or Sol for `standard` tasks as well as `complex` tasks:
+This uses Opus for Claude `standard` tasks as well as `complex` tasks, and keeps
+Codex on Sol with the strong tier's high uncertain-effort default:
 
 ```json
 {
@@ -156,6 +158,22 @@ This uses Opus or Sol for `standard` tasks as well as `complex` tasks:
   }
 }
 ```
+
+**Keep GPT-5.6 Terra for balanced Codex tasks.** GPT-6 has no Terra model, so
+the shipped policy uses Sol for the balanced tier. Terra stays in the catalog
+while Codex offers it:
+
+```json
+{
+  "routing": {
+    "codex": { "standard": "codex-terra" }
+  }
+}
+```
+
+If a later Codex release drops Terra, automatic Codex launch reports the missing
+model. Run `switchboard doctor --fix` to restore the shipped route without
+editing JSON.
 
 Jev still assesses effort for the model policy selects. This mapping does not
 force high effort. To raise even a confident low-effort choice, change the
@@ -206,6 +224,26 @@ also want a different fallback effort. Raising a profile's `defaultReasoning`
 changes low-confidence or missing-effort handling; it does not change this
 classifier-unavailable fallback rule.
 
+## Let doctor fix it
+
+`switchboard doctor --fix` compares your policy with the models your installed
+Codex offers. It runs `codex debug models --bundled`, a local command, and makes
+no AI request. For each routed model Codex lacks, it offers to restore the
+shipped route (when you had changed it), exclude the model, or keep the policy
+and update Codex yourself. It also offers to lift an exclusion for a model Codex
+now offers. It shows the resulting `policy.json`, asks before saving, and backs
+up the previous file to `policy.json.bak`. Plain `switchboard doctor` stays
+offline and never runs either CLI.
+
+Claude Code has no local model list, so `--fix` cannot check Claude model
+access automatically. Instead it asks whether your plan can use Fable, the
+highest Claude tier. Some Claude subscriptions require usage credits for Fable;
+its requests then fail with "Usage credits are required for this model." If
+your plan cannot use it, `--fix` routes the highest tier to Opus 5.5
+(`"routing": { "claude": { "demanding": "claude-opus" } }`). A later run offers
+to switch back to Fable. Start a new conversation after the change: an existing
+conversation keeps its saved model.
+
 ## Check a change and undo it
 
 `switchboard config check` validates the policy; `switchboard config show` prints
@@ -247,7 +285,10 @@ and relaunch. Saved conversations still retain their original pair.
 | `version` | `1` | Policy schema version; leave unchanged. |
 
 The built-in profile names are `claude-haiku`, `claude-sonnet`, `claude-opus`,
-`claude-fable`, `codex-luna`, `codex-terra`, `codex-sol`, and `codex-astra`.
+`claude-fable`, `codex-luna`, `codex-sol-balanced`, `codex-sol`, `codex-astra`,
+and `codex-terra`. `codex-sol-balanced` and `codex-sol` both use GPT-6 Sol;
+the balanced profile defaults to medium reasoning when effort is uncertain.
+`codex-terra` uses GPT-5.6 Terra and is not routed by default.
 A new named profile needs a tool, catalog model, and all five effort mappings.
 Partial edits to a built-in profile inherit its remaining fields.
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mergePolicy, parsePolicy, validateMappings } from '../src/core/config.ts';
-import { defaultPolicy, bundledCatalog } from '../src/defaults.ts';
+import { mergePolicy, parsePolicy, routedFamilies, validateMappings } from '../src/core/config.ts';
+import { defaultPolicy, bundledCatalog, eligibleFamilies } from '../src/defaults.ts';
 import { catalogFixture, policyFixture } from './fixtures.ts';
 
 test('personal changes preserve unrelated defaults without mutating them', () => {
@@ -64,4 +64,15 @@ test('personal model exclusions replace the list and must name catalogued models
     const wrong = mergePolicy(policyFixture(), { excludedModels: { codex: [model] } });
     assert.throws(() => validateMappings(wrong, catalogFixture()), /excluded/i);
   }
+});
+
+test('routed families follow the effective routing and exclusions', () => {
+  assert.deepEqual(eligibleFamilies, {
+    claude: ['Haiku', 'Sonnet', 'Opus 5.5', 'Fable'],
+    codex: ['GPT-6 Luna', 'GPT-6 Sol', 'GPT-6 Astra'],
+  });
+  const policy = mergePolicy(defaultPolicy, {
+    routing: { codex: { standard: 'codex-terra' } }, excludedModels: { codex: ['gpt-6-astra'] },
+  });
+  assert.deepEqual(routedFamilies(policy, bundledCatalog, 'codex'), ['GPT-6 Luna', 'GPT-5.6 Terra', 'GPT-6 Sol']);
 });

@@ -101,6 +101,11 @@ For example, `npm run switchboard -- codex resume CONVERSATION_ID`.
 
 ## Troubleshooting
 
+If Claude reports "Usage credits are required for this model" on a new
+conversation, your plan cannot use the routed model (usually Fable) without
+usage credits. Run `switchboard doctor --fix` to route the highest Claude tier
+to Opus 5.5, then start a new conversation.
+
 Start with `switchboard doctor` and `switchboard config check`. Neither makes an
 AI request. `doctor` checks that a key is present, not whether it works or has
 credits. Use `explain` to distinguish a classifier fallback from a native provider

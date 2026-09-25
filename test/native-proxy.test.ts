@@ -76,7 +76,7 @@ test('Codex with a saved route tolerates missing turn metadata without reclassif
     assert.equal((await call(proxy.url, proxy.token, '/responses', { ...body, client_metadata: { 'x-codex-turn-metadata': JSON.stringify({ thread_id: 'cx', turn_id: 't', request_kind: 'turn' }) } })).status, 200);
     assert.equal((await call(proxy.url, proxy.token, '/responses', { ...body, model: 'switchboard' })).status, 200);
     assert.equal(calls, 1);
-    assert.equal(upstream.requests[1]?.body.model, 'gpt-5.6-sol');
+    assert.equal(upstream.requests[1]?.body.model, 'gpt-6-sol');
     assert.equal((await call(proxy.url, proxy.token, '/responses', { ...body, client_metadata: { thread_id: 'unseen' } })).status, 409);
     assert.equal((await call(proxy.url, proxy.token, '/responses', body, { 'thread-id': 'conflict' })).status, 409);
     assert.equal(upstream.requests.length, 2);
@@ -219,7 +219,7 @@ for (const contentType of ['text/event-stream', undefined]) test(`Codex streams 
     const result = await call(proxy.url, proxy.token, '/responses', body);
     assert.equal(result.status, 200);
     const stream = await result.text();
-    assert.match(stream, /gpt-5.6-sol.*high.*classifier unavailable/i);
+    assert.match(stream, /gpt-6-sol.*high.*classifier unavailable/i);
     assert.ok(stream.indexOf('response.created') < stream.indexOf('[Router]'));
     assert.ok(stream.indexOf('[Router]') < stream.indexOf('response.completed'));
     assert.equal((stream.match(/response.output_item.done/g) ?? []).length, 2); // event and JSON type
@@ -294,7 +294,7 @@ test('Claude classifies a hook-matched prompt bundled with a denied tool result 
     assert.equal(after.history.length, 2);
     assert.equal(after.lastDecision.turnId, 'p2');
     assert.equal(after.lastDecision.turnDetection, 'hook');
-    assert.equal(after.lastDecision.recommendation?.model, 'claude-opus-5');
+    assert.equal(after.lastDecision.recommendation?.model, 'claude-opus-5-5');
     assert.deepEqual(after.selection, initial.selection);
     assert.deepEqual(upstream.requests.at(-1)?.body.messages, mixed.messages);
     assert.deepEqual(upstream.requests.at(-1)?.body.system, base.system);
@@ -353,7 +353,7 @@ for (const excludeRoutine of [false, true]) test(`Codex task titles use eligible
   const root = await mkdtemp(join(tmpdir(), 'router-codex-title-'));
   const upstream = await fixtureUpstream();
   const policy = structuredClone(defaultPolicy);
-  if (excludeRoutine) policy.excludedModels.codex.push('gpt-5.6-luna');
+  if (excludeRoutine) policy.excludedModels.codex.push('gpt-6-luna');
   const tasks: string[] = [];
   const decisions: unknown[] = [];
   const proxy = await startProxy({ tool: 'codex', root, policy, catalog: bundledCatalog,
@@ -370,7 +370,7 @@ for (const excludeRoutine of [false, true]) test(`Codex task titles use eligible
     assert.deepEqual(tasks, []);
     assert.equal(await store.load('codex', 'title'), null);
     assert.deepEqual(decisions, []);
-    assert.equal(upstream.requests[0]?.body.model, excludeRoutine ? 'gpt-5.6-terra' : 'gpt-5.6-luna');
+    assert.equal(upstream.requests[0]?.body.model, excludeRoutine ? 'gpt-6-sol' : 'gpt-6-luna');
     assert.deepEqual(upstream.requests[0]?.body.reasoning, { effort: 'low' });
     assert.deepEqual(upstream.requests[0]?.body.input, title.input);
     assert.equal((await call(proxy.url, proxy.token, '/responses', main)).status, 200);
@@ -388,7 +388,7 @@ for (const excludeRoutine of [false, true]) test(`Codex task titles use eligible
     assert.equal(await store.load('codex', 'title'), null);
     assert.equal(tasks.length, 1); assert.equal(decisions.length, 1);
     assert.equal((await readdir(join(root, 'sessions'))).length, 1);
-    assert.equal(upstream.requests[1]?.body.model, 'gpt-5.6-sol');
+    assert.equal(upstream.requests[1]?.body.model, 'gpt-6-sol');
   } finally { await proxy.close(); await upstream.close(); await rm(root, { recursive: true, force: true }); }
 });
 
@@ -398,7 +398,7 @@ test('Claude helper before main uses transient fallback without classification',
   try {
     const response = await call(proxy.url, proxy.token, '/v1/messages', { model: 'switchboard', metadata: { user_id: JSON.stringify({ session_id: 'helper-session' }) }, messages: [{ role: 'user', content: 'helper' }] }, { 'x-claude-code-agent-id': 'agent-1' });
     assert.equal(response.status, 200); await response.text(); assert.equal(classified, 0);
-    assert.equal(upstream.requests[0]?.body.model, 'claude-opus-5');
+    assert.equal(upstream.requests[0]?.body.model, 'claude-opus-5-5');
   } finally { await proxy.close(); await upstream.close(); await rm(root, { recursive: true, force: true }); }
 });
 
@@ -409,7 +409,7 @@ test('Claude one-token startup quota probe neither classifies nor adds thinking'
   const body = { model: 'switchboard', max_tokens: 1, metadata: { user_id: JSON.stringify({ session_id: 'quota-session' }) }, messages: [{ role: 'user', content: 'quota' }] };
   try {
     assert.equal((await call(proxy.url, proxy.token, '/v1/messages', body)).status, 200);
-    assert.deepEqual(upstream.requests[0]?.body, { ...body, model: 'claude-opus-5' });
+    assert.deepEqual(upstream.requests[0]?.body, { ...body, model: 'claude-opus-5-5' });
     assert.equal((await readdir(join(root, 'sessions')).catch(() => [])).length, 0);
     assert.equal((await call(proxy.url, proxy.token, '/v1/messages', { ...body, max_tokens: 100 })).status, 409);
     assert.equal((await call(proxy.url, proxy.token, '/v1/messages', { ...body, tools: [] })).status, 409);
@@ -426,7 +426,7 @@ test('Claude session-title requests do not require or consume the main prompt ho
     await call(proxy.url, proxy.token, '/_router/turn', { session_id: 'title-session', prompt_id: 'first', prompt: 'reverse a linked list' });
     assert.equal((await call(proxy.url, proxy.token, '/v1/messages', title)).status, 200);
     assert.deepEqual(tasks, []);
-    assert.equal(upstream.requests[0]?.body.model, 'claude-opus-5');
+    assert.equal(upstream.requests[0]?.body.model, 'claude-opus-5-5');
     assert.equal((await readdir(join(root, 'sessions')).catch(() => [])).length, 0);
     assert.equal((await call(proxy.url, proxy.token, '/v1/messages', { ...base, messages: [{ role: 'user', content: 'reverse a linked list' }] })).status, 200);
     assert.deepEqual(tasks, ['reverse a linked list']);
@@ -447,7 +447,7 @@ test('Claude count_tokens before main uses transient fallback without classifica
   try {
     const response = await call(proxy.url, proxy.token, '/v1/messages/count_tokens', { model: 'switchboard', metadata: { user_id: JSON.stringify({ session_id: 'count-session' }) }, messages: [] }, { 'x-claude-code-session-id': 'count-session' });
     assert.equal(response.status, 200); await response.text(); assert.equal(classified, 0);
-    assert.equal(upstream.requests[0]?.body.model, 'claude-opus-5');
+    assert.equal(upstream.requests[0]?.body.model, 'claude-opus-5-5');
   } finally { await proxy.close(); await upstream.close(); await rm(root, { recursive: true, force: true }); }
 });
 
@@ -456,10 +456,10 @@ test('explicit traffic passes unchanged and oversized bodies are rejected before
   const upstream = await fixtureUpstream();
   const proxy = await startProxy({ tool: 'claude', root, policy: defaultPolicy, catalog: bundledCatalog, classify: async () => { throw new Error('unused'); }, upstreams: { claude: upstream.url }, maxBodyBytes: 256 });
   try {
-    const explicit = { model: 'claude-opus-5', output_config: { effort: 'max' }, messages: [] };
+    const explicit = { model: 'claude-opus-5-5', output_config: { effort: 'max' }, messages: [] };
     const ok = await call(proxy.url, proxy.token, '/v1/messages', explicit); assert.equal(ok.status, 200); await ok.text();
     assert.deepEqual(upstream.requests[0]?.body, explicit);
-    const large = await call(proxy.url, proxy.token, '/v1/messages', { model: 'claude-opus-5', value: 'x'.repeat(1000) });
+    const large = await call(proxy.url, proxy.token, '/v1/messages', { model: 'claude-opus-5-5', value: 'x'.repeat(1000) });
     assert.equal(large.status, 413); assert.equal(upstream.requests.length, 1);
   } finally { await proxy.close(); await upstream.close(); await rm(root, { recursive: true, force: true }); }
 });
@@ -472,9 +472,9 @@ test('invalid tokens never reach upstream and redirects are returned without fol
   const address = server.address(); assert(address && typeof address === 'object');
   const proxy = await startProxy({ tool: 'claude', root, policy: defaultPolicy, catalog: bundledCatalog, classify: async () => { throw new Error('unused'); }, upstreams: { claude: `http://127.0.0.1:${address.port}` } });
   try {
-    const bad = await call(proxy.url, 'wrong', '/v1/messages', { model: 'claude-opus-5' });
+    const bad = await call(proxy.url, 'wrong', '/v1/messages', { model: 'claude-opus-5-5' });
     assert.equal(bad.status, 401); assert.equal(requests, 0);
-    const redirected = await call(proxy.url, proxy.token, '/v1/messages', { model: 'claude-opus-5' });
+    const redirected = await call(proxy.url, proxy.token, '/v1/messages', { model: 'claude-opus-5-5' });
     assert.equal(redirected.status, 307); assert.equal(requests, 1);
   } finally { await proxy.close(); await new Promise<void>(resolve => server.close(() => resolve())); await rm(root, { recursive: true, force: true }); }
 });
@@ -498,7 +498,7 @@ test('client disconnect cancels the upstream stream and close handles active wor
       const request = http.request(target, { method: 'POST', headers: { 'content-type': 'application/json', [TOKEN_HEADER]: proxy.token } }, response => {
         response.once('data', () => { response.destroy(); resolve(); });
       });
-      request.on('error', reject); request.end(JSON.stringify({ model: 'claude-opus-5' }));
+      request.on('error', reject); request.end(JSON.stringify({ model: 'claude-opus-5-5' }));
     });
     await Promise.race([closed, new Promise<never>((_resolve, reject) => setTimeout(() => reject(new Error('upstream was not cancelled')), 2000))]);
     await proxy.close();
@@ -602,7 +602,7 @@ test('client disconnect before upstream headers cancels provider work', async ()
   const proxy = await startProxy({ tool: 'claude', root, policy: defaultPolicy, catalog: bundledCatalog, classify: async () => { throw new Error('unused'); }, upstreams: { claude: `http://127.0.0.1:${address.port}` } });
   try {
     const request = http.request(new URL('/v1/messages', proxy.url), { method: 'POST', headers: { [TOKEN_HEADER]: proxy.token } });
-    request.on('error', () => {}); request.end(JSON.stringify({ model: 'claude-opus-5' }));
+    request.on('error', () => {}); request.end(JSON.stringify({ model: 'claude-opus-5-5' }));
     await upstreamSeen; request.destroy();
     await Promise.race([upstreamClosed, new Promise<never>((_r, reject) => setTimeout(() => reject(new Error('pre-header upstream was not cancelled')), 2000))]);
   } finally { await proxy.close(); await new Promise<void>(resolve => server.close(() => resolve())); await rm(root, { recursive: true, force: true }); }

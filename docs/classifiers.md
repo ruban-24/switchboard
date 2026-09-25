@@ -78,13 +78,13 @@ With the shipped policy, the complete question map contains:
 | `taskType` | Kind of engineering task | Kind of engineering task |
 | `complexity` | Required capability tier | Required capability tier |
 | `sufficientContext` | Enough information to estimate difficulty? | Enough information to estimate difficulty? |
-| `effort_0` | Effort assuming Sonnet | Effort assuming Luna |
-| `effort_1` | Effort assuming Opus | Effort assuming Terra |
-| `effort_2` | Effort assuming Fable | Effort assuming Sol |
-| `effort_3` | Not sent | Effort assuming Astra |
+| `effort_0` | Effort for the balanced role (Sonnet) | Effort for the fast role (Luna) |
+| `effort_1` | Effort for the strong role (Opus 5.5) | Effort for the balanced and strong roles (Sol) |
+| `effort_2` | Effort for the highest role (Fable) | Effort for the highest role (Astra) |
 
 These indexes are generated for the effective policy. Excluding or remapping a
-model can change them; code binds each question to its model ID. Haiku gets no
+model can change them; code binds each question to its model ID. The question
+text describes the capability role, not the model name. Haiku gets no
 effort question. Questions for all eligible models travel in the same request.
 
 A direct TypeSafe response includes `model`, an `answers` map, and `usage`.
@@ -161,7 +161,8 @@ the checkout's `.env.local` when present. Keep this file private and out of Git.
 ## Check a connection
 
 `switchboard doctor` checks configuration and key presence without a network
-request. A new routed task exercises the configured connection. If it fails or
+request. `switchboard doctor --fix` additionally reads the model list bundled with
+your installed Codex (a local command) and offers policy changes. A new routed task exercises the configured connection. If it fails or
 times out, the new conversation uses your configured conservative fallback;
 existing conversations retain their saved route. Inspect the status line,
 Codex notice, or `switchboard explain` to distinguish a fallback from a Jev choice.

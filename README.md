@@ -108,7 +108,10 @@ The key is saved in a file readable only by your user. You can launch immediatel
 with no alias or shell restart. Running setup again preserves your personal policy.
 
 Setup makes no AI calls. `doctor` checks your policy, enabled agents, and whether
-a key is present; your first routed task tests the connection.
+a key is present; your first routed task tests the connection. If Codex reports
+that a routed model is missing, or Claude reports "Usage credits are required
+for this model" for Fable, `switchboard doctor --fix` walks you through the
+change without editing JSON.
 
 See [classifier connections](docs/classifiers.md) for endpoints,
 [privacy](docs/privacy.md) for what leaves your machine, and the
@@ -216,10 +219,14 @@ and [personal policy guide](docs/customization.md).
 
 | Tier | Intended work | Claude Code | Codex |
 | --- | --- | --- | --- |
-| Fast | Mechanical edits and simple, bounded requests | Haiku | GPT-5.6 Luna |
-| Balanced | Everyday implementation, familiar algorithms and scoped changes | Sonnet | GPT-5.6 Terra |
-| Strong | Difficult debugging or consequential correctness decisions | Opus | GPT-5.6 Sol |
+| Fast | Mechanical edits and simple, bounded requests | Haiku | GPT-6 Luna |
+| Balanced | Everyday implementation, familiar algorithms and scoped changes | Sonnet | GPT-6 Sol (medium default) |
+| Strong | Difficult debugging or consequential correctness decisions | Opus 5.5 | GPT-6 Sol (high default) |
 | Highest | Exceptional reasoning or extensive work beyond the strong tier | Fable | GPT-6 Astra |
+
+GPT-6 has no Terra model, so Sol serves both middle Codex tiers with a different
+default effort for each. GPT-5.6 Terra remains available in personal policy while
+Codex offers it; see [customization](docs/customization.md).
 
 For example, an LRU cache implementation ordinarily fits the balanced tier;
 reviewing concurrent money transfers may need the strong tier. These describe
@@ -263,8 +270,8 @@ model actually selected. An illustrative initial selection and follow-up look
 like this:
 
 ```text
-[Router] gpt-5.6-terra / medium — Jev capability and effort selection.
-[Router] gpt-5.6-terra / medium — pinned for this conversation.
+[Router] gpt-6-sol / medium — Jev capability and effort selection.
+[Router] gpt-6-sol / medium — pinned for this conversation.
 ```
 
 For either CLI, inspect a saved conversation with:

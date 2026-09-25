@@ -62,7 +62,7 @@ access. Never include credentials or raw private transcripts in a contribution.
 
 | Area | Files |
 | --- | --- |
-| CLI commands and setup | `src/cli.ts`, `src/setup.ts`, `src/settings.ts` |
+| CLI commands and setup | `src/cli.ts`, `src/setup.ts`, `src/settings.ts`, `src/doctor-fix.ts` |
 | Classifier connections and Jev questions | `src/classifier.ts`, `src/jev.ts`, `src/jev-questions.ts`, `src/capability-question.ts` |
 | Model and effort selection | `src/core/policy.ts`, `src/core/config.ts`, `src/defaults.ts` |
 | Conversation pinning and saved state | `src/core/session.ts`, `src/storage.ts` |

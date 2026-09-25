@@ -47,16 +47,16 @@ for the classifier payload and native model fields, and
 
 | Capability tier (policy key) | Claude Code | Codex |
 | --- | --- | --- |
-| Fast (`routine`) | Haiku | GPT-5.6 Luna |
-| Balanced (`standard`) | Sonnet | GPT-5.6 Terra |
-| Strong (`complex`) | Opus | GPT-5.6 Sol |
+| Fast (`routine`) | Haiku | GPT-6 Luna |
+| Balanced (`standard`) | Sonnet | GPT-6 Sol (`codex-sol-balanced`, medium default) |
+| Strong (`complex`) | Opus 5.5 | GPT-6 Sol (`codex-sol`, high default) |
 | Highest (`demanding`) | Fable | GPT-6 Astra |
 
-All four tiers are configured in the shipped default policy. Concrete IDs and supported API effort values are in the [model catalog](model-catalog.md). Sonnet, Opus, Fable, Luna, Terra, Sol, and Astra can each use `low`, `medium`, `high`, `xhigh`, or `max`. Haiku receives no effort parameter. The native launchers apply these choices at inference time.
+All four tiers are configured in the shipped default policy. Concrete IDs and supported API effort values are in the [model catalog](model-catalog.md). Sonnet, Opus, Fable, Luna, Sol, and Astra can each use `low`, `medium`, `high`, `xhigh`, or `max`. Haiku receives no effort parameter. The native launchers apply these choices at inference time.
 
-The `default-v0.3` classifier makes **one Jev request per classified user turn**. It asks for task type, capability tier, sufficient context, and a separate conditional effort judgment for each distinct eligible model that supports effort. The default Claude request has six questions; Codex has seven. Excluded and unused models have no effort questions. Deterministic policy resolves the model first, including confidence rules and exclusions, then reads only that model's effort answer. Haiku has no invented effort answer or confidence. Jev supplies structured judgments; code resolves the policy and execution.
+The `default-v0.3` classifier makes **one Jev request per classified user turn**. It asks for task type, capability tier, sufficient context, and a separate conditional effort judgment for each distinct eligible model that supports effort. The default Claude request has six questions; Codex also has six, because Sol serves two tiers and is asked about once. Excluded and unused models have no effort questions. Deterministic policy resolves the model first, including confidence rules and exclusions, then reads only that model's effort answer. Haiku has no invented effort answer or confidence. Jev supplies structured judgments; code resolves the policy and execution.
 
-Model and effort are related judgments, not a single score that ranks every pair. The policy does not assume Sonnet/max equals Opus/low. It first chooses a sufficient capability tier, then asks how much deliberation that model needs. Conditional questions use the model identity and its owner-defined capability role; they do not establish measured performance guarantees.
+Model and effort are related judgments, not a single score that ranks every pair. The policy does not assume Sonnet/max equals Opus/low. It first chooses a sufficient capability tier, then asks how much deliberation that model needs. Conditional questions describe the model's owner-defined capability role, not its name: the classifier cannot know models released after its training. Code binds each answer to its model ID. The roles do not establish measured performance guarantees.
 
 The [capability question](../src/capability-question.ts) asks Jev to choose the least capable tier sufficient for the work. Mechanical changes and familiar factual answers belong in fast. Bounded development, including an LRU cache with tests, belongs in balanced. Resolving uncertain causes or interacting invariants can require strong. Highest is reserved for work whose novelty, uncertainty, or coordination exceeds ordinary difficult coding. Length, urgency, file count, and security vocabulary alone do not set the tier. These criteria are not measured guarantees of model success. The `routine/standard/complex/demanding` keys remain stable for personal configuration.
 
@@ -87,7 +87,7 @@ exactly `0.70` meets a `0.70` threshold.
 
 ## How policy selects the pair
 
-Model and effort confidence are retained separately. The provisional `modelMinConfidence` and `effortMinConfidence` defaults are both 0.70. Low model confidence imposes a balanced minimum while retaining a stronger proposed tier. Low effort confidence keeps the model and takes the higher of the proposed reasoning and that profile's `defaultReasoning`: low for Luna, medium for Sonnet/Terra, high for Opus/Sol, and xhigh for Fable/Astra. Haiku sends no effort. A confident effort choice still uses its normal mapping, including low or max.
+Model and effort confidence are retained separately. The provisional `modelMinConfidence` and `effortMinConfidence` defaults are both 0.70. Low model confidence imposes a balanced minimum while retaining a stronger proposed tier. Low effort confidence keeps the model and takes the higher of the proposed reasoning and that profile's `defaultReasoning`: low for Luna, medium for Sonnet and balanced-tier Sol, high for Opus and strong-tier Sol, and xhigh for Fable/Astra. Haiku sends no effort. A confident effort choice still uses its normal mapping, including low or max.
 
 A missing or invalid selected-model effort answer/confidence uses that model's profile default. An answer bound to a different model cannot be reused. Invalid capability/context answers or a structurally malformed provider response use the classifier-unavailable fallback. The selected reasoning label passes through the personal profile's effort mapping, so users can still cap expensive effort levels.
 

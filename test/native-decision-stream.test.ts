@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { DecisionStream } from '../src/native/decision-stream.ts';
 import type { Decision } from '../src/core/types.ts';
 
-const decision: Decision = { conversationId: 'c', turnId: 't', tool: 'codex', selection: { model: 'gpt-5.6-sol', effort: 'high', profile: null }, classification: null, recommendation: null, reason: 'uncertain', policyId: 'p', at: 'now' };
+const decision: Decision = { conversationId: 'c', turnId: 't', tool: 'codex', selection: { model: 'gpt-6-sol', effort: 'high', profile: null }, classification: null, recommendation: null, reason: 'uncertain', policyId: 'p', at: 'now' };
 
 test('routing display preserves split UTF-8 provider bytes and inserts only one local notice', () => {
   const created = Buffer.from('event: response.created\ndata: {"type":"response.created","response":{"id":"r"}}\n\n');

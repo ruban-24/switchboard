@@ -86,7 +86,7 @@ test('Haiku omits effort even when the reasoning demand is xhigh or max', () => 
 test('excluding Fable or Astra retains a max request on the next eligible model', () => {
   const policy = mergePolicy(defaultPolicy, { excludedModels: { claude: ['claude-fable-5-1'], codex: ['gpt-6-astra'] } });
   const classification = parseClassification({ ...standard, complexity: 'demanding', reasoning: 'max' });
-  for (const [tool, expected] of [['claude', 'claude-opus-5'], ['codex', 'gpt-5.6-sol']] as const) {
+  for (const [tool, expected] of [['claude', 'claude-opus-5-5'], ['codex', 'gpt-6-sol']] as const) {
     const route = selectInitialRoute(policy, bundledCatalog, tool, classification);
     assert.equal(route.model, expected);
     assert.equal(route.effort, 'max');
@@ -94,7 +94,7 @@ test('excluding Fable or Astra retains a max request on the next eligible model'
 });
 
 test('insufficient context uses the conservative high fallback even with a max proposal', () => {
-  for (const [tool, model] of [['claude', 'claude-opus-5'], ['codex', 'gpt-5.6-sol']] as const) {
+  for (const [tool, model] of [['claude', 'claude-opus-5-5'], ['codex', 'gpt-6-sol']] as const) {
     const route = selectInitialRoute(defaultPolicy, bundledCatalog, tool, { ...standard, reasoning: 'max', sufficientContext: false });
     assert.equal(route.model, model);
     assert.equal(route.effort, 'high');

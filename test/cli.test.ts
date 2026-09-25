@@ -206,3 +206,31 @@ test('noninteractive setup never saves an environment key or modifies shell prof
   await assert.rejects(readFile(join(s.config, 'connection.json')), { code: 'ENOENT' });
   assert.equal(await readFile(profile, 'utf8'), '# private preferences\n');
 });
+
+test('doctor --fix requires a terminal and never writes policy when redirected', async t => {
+  const s = await sandbox(t);
+  const result = s.cli('doctor', '--fix');
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /interactive/);
+  await assert.rejects(readFile(join(s.config, 'policy.json')), { code: 'ENOENT' });
+});
+
+test('doctor lists the effective lineup and points to the guided fix', async t => {
+  const s = await sandbox(t);
+  await mkdir(s.config, { recursive: true });
+  await writeFile(join(s.config, 'policy.json'), '{"routing":{"codex":{"standard":"codex-terra"}}}\n');
+  const result = s.cli('doctor');
+  assert.match(result.stdout, /Automatic codex lineup: GPT-6 Luna → GPT-5\.6 Terra → GPT-6 Sol → GPT-6 Astra/);
+  assert.match(result.stdout, /Automatic claude lineup: Haiku → Sonnet → Opus 5\.5 → Fable/);
+  assert.match(result.stdout, /doctor --fix/);
+});
+
+test('codex launch explains how to recover when the installed Codex lacks a routed model', async t => {
+  const s = await sandbox(t);
+  const catalog = JSON.stringify({ models: ['gpt-6-luna', 'gpt-6-astra'].map(slug => ({ slug })) });
+  await writeFile(join(s.bin, 'codex'), `#!/bin/sh\nif [ "$1" = debug ]; then echo '${catalog}'; exit 0; fi\necho MUST-NOT-LAUNCH\n`, { mode: 0o755 });
+  const result = s.cli('codex');
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /gpt-6-sol.*missing.*switchboard doctor --fix/);
+  assert.doesNotMatch(result.stdout + result.stderr, /MUST-NOT-LAUNCH|secret-do-not-print/);
+});
