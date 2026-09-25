@@ -7,6 +7,8 @@ type Override = Record<string, unknown>;
 export interface FixOption {
   key: string;
   label: string;
+  /** Set when choosing this option confirms plan access to a model, so doctor need not ask again. */
+  keeps?: string;
   apply(override: Override): void;
 }
 
@@ -108,7 +110,7 @@ export function planCodexFixes(policy: Policy, override: Override, native: strin
  * Claude Code has no local model list, so plan access cannot be detected offline. Ask about
  * the shipped highest-tier model and offer the strong profile when the plan cannot use it.
  */
-export function planClaudeFixes(policy: Policy, override: Override, defaults: Policy, catalog: Catalog): FixFinding[] {
+export function planClaudeFixes(policy: Policy, override: Override, defaults: Policy, catalog: Catalog, keptTopModel?: string): FixFinding[] {
   const topProfile = defaults.routing.claude.demanding;
   const strongProfile = defaults.routing.claude.complex;
   if (!topProfile || !strongProfile) return [];
@@ -118,10 +120,11 @@ export function planClaudeFixes(policy: Policy, override: Override, defaults: Po
   const routedTop = policy.profiles[policy.routing.claude.demanding ?? '']?.model;
   const replaced = (record(structuredClone(override), 'routing').claude as Override | undefined)?.demanding === strongProfile;
   if (routedTop === top && !policy.excludedModels.claude.includes(top)) {
+    if (keptTopModel === top) return [];
     return [{
       message: `${family(top)} (${top}) serves your highest Claude tier. Some Claude subscriptions require usage credits for it; a request then fails with "Usage credits are required for this model."`,
       options: [
-        { key: 'k', label: `Keep ${family(top)}; my plan can use it`, apply() {} },
+        { key: 'k', label: `Keep ${family(top)}; my plan can use it`, keeps: top, apply() {} },
         { key: 'o', label: `Use ${family(strong)} for the highest tier instead`, apply(target) {
           record(record(target, 'routing'), 'claude').demanding = strongProfile;
         } },

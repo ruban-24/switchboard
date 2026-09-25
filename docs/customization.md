@@ -4,23 +4,40 @@ Switchboard separates the classifier's judgment from your rules. Jev assesses
 the task; your policy decides which model and effort to use. You can change the
 policy without changing the classifier or reinstalling Switchboard.
 
-## Edit your policy
+## Change your settings
 
-1. Run `switchboard init`, then `switchboard doctor` to find your configuration
-   directory. The default is `~/.config/switchboard`.
-2. Open `policy.json` in your editor. Add settings to its existing JSON object;
-   include only the values you want to change.
-3. Run `switchboard config check`, then `switchboard config show` to inspect the
-   merged result.
-4. Exit the running coding CLI, relaunch with `switchboard claude` or
-   `switchboard codex`, and start a new conversation. Policy is loaded at launch;
-   a running process does not reload edits. Resuming an existing conversation
-   keeps its saved model and effort.
+You never need to open a configuration file. Pick whichever is convenient:
+
+- **Menu:** run `switchboard config`. It shows your current models for each tier,
+  skipped models, effort limits, agents, prompt history, and classifier
+  connection. Changes are collected, shown as a summary, and saved only after you
+  confirm.
+- **One command:** `switchboard config set <setting> <value>`, for example
+  `switchboard config set routing.codex.standard codex-terra`. Use
+  `switchboard config get <setting>` to read the effective value and
+  `switchboard config unset <setting>` to return to the shipped default. Values
+  that parse as JSON (numbers, `true`, lists such as `'["gpt-6-astra"]'`) are
+  used as JSON; anything else is text.
+- **Doctor:** run `switchboard doctor` in a terminal. After its report it offers
+  to check the models your installed Codex offers and to fix what it finds.
+
+Every change is validated before it is written: unknown settings, unknown
+models, unsupported effort values, and changes that leave an agent without a
+routable model are rejected, and the file is left as it was. The previous
+policy is kept as `policy.json.bak`.
+
+Then exit the running coding CLI, relaunch with `switchboard claude` or
+`switchboard codex`, and start a new conversation. Policy is loaded at launch;
+a running process does not reload edits. Resuming an existing conversation
+keeps its saved model and effort.
 
 From a source checkout, use `npm run switchboard --` in place of `switchboard`.
 Keys belong in the private connection settings created by `init`, not in policy.
-Objects merge with defaults; arrays replace the default list. Unknown fields,
-unknown models, and unsupported effort values produce a configuration error.
+
+The settings live in `policy.json` in the directory `switchboard doctor`
+reports (default `~/.config/switchboard`). You can still edit it directly: it
+holds only your changes. Objects merge with defaults; arrays replace the default
+list. Run `switchboard config check` after a manual edit.
 
 ## Choose the change you want
 
@@ -35,7 +52,7 @@ it. Combine the examples below in one JSON object, keeping one `routing`,
 | Use stronger models for everyday tasks | Map `routing.claude.standard` to `claude-opus`, or `routing.codex.standard` to `codex-astra` | A task classified as `standard` selects Opus or Astra; effort is assessed for that model. Codex already uses Sol for `standard`; mapping it to `codex-sol` only raises the uncertain-effort default to high. |
 | Keep GPT-5.6 Terra for everyday Codex tasks | Map `routing.codex.standard` to `codex-terra` | Standard tasks use Terra while your Codex still offers it. |
 | Avoid the smallest model altogether | Map `routine` to a stronger profile, or exclude Haiku/Luna | Routine tasks use the replacement profile or next eligible tier. |
-| Avoid a model your plan cannot access | Add its model ID to `excludedModels`, or run `switchboard doctor --fix` | Automatic selection skips it; excluding every routed model is an error. |
+| Avoid a model your plan cannot access | Choose **Models to skip** in `switchboard config`, or run `switchboard doctor` | Automatic selection skips it; excluding every routed model is an error. |
 | Accept more lower-effort proposals | Lower `classifier.effortMinConfidence` | Fewer proposals are raised to the selected profile's default reasoning. Model selection is unchanged. |
 | Use less effort on a particular model | Map its `xhigh` and `max` effort labels to `high` | Those judgments send `high` to the provider, even when Jev is confident. |
 | Require more effort on a particular model | Map its `low` and `medium` labels to `high` | Low/medium judgments send `high`; other mappings stay unchanged. Haiku cannot accept effort. |
@@ -172,8 +189,9 @@ while Codex offers it:
 ```
 
 If a later Codex release drops Terra, automatic Codex launch reports the missing
-model. Run `switchboard doctor --fix` to restore the shipped route without
-editing JSON.
+model. Run `switchboard doctor` to restore the shipped route without
+editing JSON. The same change as a command:
+`switchboard config set routing.codex.standard codex-terra`.
 
 Jev still assesses effort for the model policy selects. This mapping does not
 force high effort. To raise even a confident low-effort choice, change the
@@ -226,20 +244,22 @@ classifier-unavailable fallback rule.
 
 ## Let doctor fix it
 
-`switchboard doctor --fix` compares your policy with the models your installed
-Codex offers. It runs `codex debug models --bundled`, a local command, and makes
-no AI request. For each routed model Codex lacks, it offers to restore the
+In a terminal, `switchboard doctor` prints its offline report and then offers
+two checks. With your consent it compares your policy with the models your
+installed Codex offers. It runs `codex debug models --bundled`, a local command,
+and makes no AI request. For each routed model Codex lacks, it offers to restore the
 shipped route (when you had changed it), exclude the model, or keep the policy
 and update Codex yourself. It also offers to lift an exclusion for a model Codex
-now offers. It shows the resulting `policy.json`, asks before saving, and backs
-up the previous file to `policy.json.bak`. Plain `switchboard doctor` stays
-offline and never runs either CLI.
+now offers. It shows the resulting changes, asks before saving, and backs up the
+previous file to `policy.json.bak`. In scripts and CI, `doctor` prints only its
+offline report and never runs either CLI. `switchboard doctor --fix` runs the
+checks without asking first and repeats questions you answered before.
 
-Claude Code has no local model list, so `--fix` cannot check Claude model
-access automatically. Instead it asks whether your plan can use Fable, the
-highest Claude tier. Some Claude subscriptions require usage credits for Fable;
+Claude Code has no local model list, so doctor cannot check Claude model access
+automatically. Instead it asks whether your plan can use Fable, the highest
+Claude tier, and remembers the answer if you keep it. Some Claude subscriptions require usage credits for Fable;
 its requests then fail with "Usage credits are required for this model." If
-your plan cannot use it, `--fix` routes the highest tier to Opus 5.5
+your plan cannot use it, doctor routes the highest tier to Opus 5.5
 (`"routing": { "claude": { "demanding": "claude-opus" } }`). A later run offers
 to switch back to Fable. Start a new conversation after the change: an existing
 conversation keeps its saved model.

@@ -161,8 +161,8 @@ the checkout's `.env.local` when present. Keep this file private and out of Git.
 ## Check a connection
 
 `switchboard doctor` checks configuration and key presence without a network
-request. `switchboard doctor --fix` additionally reads the model list bundled with
-your installed Codex (a local command) and offers policy changes. A new routed task exercises the configured connection. If it fails or
+request. In a terminal it then offers to read the model list bundled with your
+installed Codex (a local command) and to fix what it finds. A new routed task exercises the configured connection. If it fails or
 times out, the new conversation uses your configured conservative fallback;
 existing conversations retain their saved route. Inspect the status line,
 Codex notice, or `switchboard explain` to distinguish a fallback from a Jev choice.
