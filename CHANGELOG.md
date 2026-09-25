@@ -21,7 +21,9 @@
 
 - `switchboard doctor --fix` compares your policy with the models your installed
   Codex offers and proposes changes, such as restoring a shipped route or
-  excluding a missing model. It asks before saving and backs up `policy.json`.
+  excluding a missing model. It also asks whether your Claude plan can use
+  Fable and, if not, routes the highest Claude tier to Opus 5.5. It asks before
+  saving and backs up `policy.json`.
 - `doctor` shows the effective automatic lineup for each enabled agent, and a
   Codex launch that fails because a routed model is missing points to
   `doctor --fix`.

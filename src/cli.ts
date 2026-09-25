@@ -17,7 +17,8 @@ import { UsageStore } from './native/usage-store.ts';
 import { connectionEnvironment, credentialKeys, saveConnection, stateDirectory } from './settings.ts';
 import type { Connection } from './settings.ts';
 import { ask, choose, installProfileBlock, recommendedProfiles } from './setup.ts';
-import { nativeCodexModels, planCodexFixes } from './doctor-fix.ts';
+import { nativeCodexModels, planClaudeFixes, planCodexFixes } from './doctor-fix.ts';
+import type { FixFinding } from './doctor-fix.ts';
 
 const help = `Switchboard — automatic model and effort routing
 
@@ -199,24 +200,37 @@ async function doctor(root: string): Promise<number> {
   return paths.every((path, index) => !policy.enabledTools.includes(v.tools[index]!) || !!path) && readiness.ready && credentialPresent ? 0 : 2;
 }
 
+function cancelled(): never {
+  throw new Error('doctor --fix cancelled; no changes written.');
+}
+
 async function doctorFix(root: string): Promise<number> {
   if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error('switchboard doctor --fix is interactive; run it in a terminal.');
   const { override, exists, file } = await personalOverride(root);
   const policy = mergePolicy(defaultPolicy, override);
   validateMappings(policy, bundledCatalog);
-  console.log('Claude Code has no local model list. Your subscription\'s access to each Claude model is checked when a request is made.');
-  if (!policy.enabledTools.includes('codex')) { console.log('Codex routing is disabled; nothing to check.'); return 0; }
-  const path = await executable('codex');
-  if (!path) throw new Error('codex is not installed or executable on PATH');
-  console.log('Reading the model list bundled with your installed Codex (local command, no network request)...');
-  const native = nativeCodexModels(await readCodexCatalog(path));
-  const findings = planCodexFixes(policy, override, native, defaultPolicy, bundledCatalog);
-  if (!findings.length) { console.log('Codex offers every model your policy routes to. No changes needed.'); return 0; }
+  const findings: FixFinding[] = [];
+  if (policy.enabledTools.includes('claude')) {
+    console.log('Claude Code has no local model list, so plan access cannot be checked automatically.');
+    findings.push(...planClaudeFixes(policy, override, defaultPolicy, bundledCatalog));
+  }
+  if (policy.enabledTools.includes('codex')) {
+    const path = await executable('codex');
+    if (!path) console.log('codex is not installed or executable on PATH; skipping the Codex model check.');
+    else {
+      console.log('Reading the model list bundled with your installed Codex (local command, no network request)...');
+      const native = nativeCodexModels(await readCodexCatalog(path));
+      const codex = planCodexFixes(policy, override, native, defaultPolicy, bundledCatalog);
+      if (!codex.length) console.log('Codex offers every model your policy routes to.');
+      findings.push(...codex);
+    }
+  }
+  if (!findings.length) { console.log('No changes needed.'); return 0; }
   const updated = structuredClone(override);
   for (const finding of findings) {
     console.log(`\n${finding.message}`);
     for (const option of finding.options) console.log(`  ${option.key}) ${option.label}`);
-    const answer = await choose('Choose', finding.options.map(option => option.key), finding.fallback);
+    const answer = await choose('Choose', finding.options.map(option => option.key), finding.fallback).catch(cancelled);
     finding.options.find(option => option.key === answer)!.apply(updated);
   }
   if (JSON.stringify(updated) === JSON.stringify(override)) { console.log('\nNo policy changes selected.'); return 0; }
@@ -224,14 +238,14 @@ async function doctorFix(root: string): Promise<number> {
   const readiness = validateMappings(result, bundledCatalog);
   if (!readiness.ready) throw new Error(`The selected changes leave routing unconfigured (${readiness.missing.join(', ')}); nothing was written.`);
   console.log(`\nProposed personal policy (${file}):\n${JSON.stringify(updated, null, 2)}`);
-  if (await choose('Save these changes? y) Yes n) No', ['y', 'n'], 'y') === 'n') { console.log('No changes written.'); return 0; }
+  if (await choose('Save these changes? y) Yes n) No', ['y', 'n'], 'y').catch(cancelled) === 'n') { console.log('No changes written.'); return 0; }
   if (exists) {
     await copyFile(file, `${file}.bak`);
     console.log(`Backed up the previous policy to ${file}.bak.`);
   }
   await atomicJsonWrite(file, updated);
   await configuration(root);
-  console.log('Saved. Relaunch switchboard codex and start a new conversation to use the updated policy.');
+  console.log('Saved. Relaunch Switchboard and start a new conversation to use the updated policy. Existing conversations keep their saved model.');
   return 0;
 }
 

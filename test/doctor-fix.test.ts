@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mergePolicy, validateMappings } from '../src/core/config.ts';
 import { bundledCatalog, defaultPolicy } from '../src/defaults.ts';
-import { nativeCodexModels, planCodexFixes } from '../src/doctor-fix.ts';
+import { nativeCodexModels, planClaudeFixes, planCodexFixes } from '../src/doctor-fix.ts';
+import { selectInitialRoute } from '../src/core/policy.ts';
+import type { Classification } from '../src/core/types.ts';
 
 const current = ['gpt-6-luna', 'gpt-6-sol', 'gpt-6-astra', 'gpt-5.6-terra'];
 
@@ -60,4 +62,32 @@ test('an exclusion for a model Codex now offers can be lifted but is kept by def
 test('native Codex catalog parsing ignores the Switchboard alias and rejects malformed input', () => {
   assert.deepEqual(nativeCodexModels({ models: [{ slug: 'switchboard' }, { slug: 'gpt-6-sol' }, {}] }), ['gpt-6-sol']);
   assert.throws(() => nativeCodexModels({ nope: true }), /malformed/);
+});
+
+function claude(override: Record<string, unknown>) {
+  return planClaudeFixes(mergePolicy(defaultPolicy, override), override, defaultPolicy, bundledCatalog);
+}
+
+test('doctor offers Opus for the highest Claude tier when the plan cannot use Fable', () => {
+  const [finding, ...rest] = claude({});
+  assert.equal(rest.length, 0);
+  assert.match(finding!.message, /Fable.*usage credits/);
+  assert.equal(finding!.fallback, 'k');
+  const updated: Record<string, unknown> = {};
+  finding!.options.find(option => option.key === 'o')!.apply(updated);
+  assert.deepEqual(updated, { routing: { claude: { demanding: 'claude-opus' } } });
+  const demanding = { taskType: 'architecture', complexity: 'demanding', reasoning: 'max', sufficientContext: true,
+    confidences: { model: .9, effort: .9, context: .9, taskType: .9 }, effortModel: 'claude-opus-5-5' } as Classification;
+  assert.deepEqual(selectInitialRoute(mergePolicy(defaultPolicy, updated), bundledCatalog, 'claude', demanding),
+    { profile: 'claude-opus', model: 'claude-opus-5-5', effort: 'max' });
+});
+
+test('doctor can return the highest Claude tier to Fable and skips plans that already exclude it', () => {
+  const override = { routing: { claude: { demanding: 'claude-opus' } }, history: { limit: 3 } };
+  const [finding] = claude(override);
+  assert.equal(finding!.fallback, 'k');
+  const updated = structuredClone(override) as Record<string, unknown>;
+  finding!.options.find(option => option.key === 'r')!.apply(updated);
+  assert.deepEqual(updated, { history: { limit: 3 } });
+  assert.deepEqual(claude({ excludedModels: { claude: ['claude-fable-5-1'] } }), []);
 });

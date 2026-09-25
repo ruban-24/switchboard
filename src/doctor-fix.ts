@@ -103,3 +103,46 @@ export function planCodexFixes(policy: Policy, override: Override, native: strin
   }
   return findings;
 }
+
+/**
+ * Claude Code has no local model list, so plan access cannot be detected offline. Ask about
+ * the shipped highest-tier model and offer the strong profile when the plan cannot use it.
+ */
+export function planClaudeFixes(policy: Policy, override: Override, defaults: Policy, catalog: Catalog): FixFinding[] {
+  const topProfile = defaults.routing.claude.demanding;
+  const strongProfile = defaults.routing.claude.complex;
+  if (!topProfile || !strongProfile) return [];
+  const top = defaults.profiles[topProfile]!.model;
+  const strong = defaults.profiles[strongProfile]!.model;
+  const family = (id: string) => catalog.models.find(model => model.id === id && model.tool === 'claude')?.family ?? id;
+  const routedTop = policy.profiles[policy.routing.claude.demanding ?? '']?.model;
+  const replaced = (record(structuredClone(override), 'routing').claude as Override | undefined)?.demanding === strongProfile;
+  if (routedTop === top && !policy.excludedModels.claude.includes(top)) {
+    return [{
+      message: `${family(top)} (${top}) serves your highest Claude tier. Some Claude subscriptions require usage credits for it; a request then fails with "Usage credits are required for this model."`,
+      options: [
+        { key: 'k', label: `Keep ${family(top)}; my plan can use it`, apply() {} },
+        { key: 'o', label: `Use ${family(strong)} for the highest tier instead`, apply(target) {
+          record(record(target, 'routing'), 'claude').demanding = strongProfile;
+        } },
+      ],
+      fallback: 'k',
+    }];
+  }
+  if (replaced && policy.profiles[strongProfile]?.model === strong) {
+    return [{
+      message: `Your highest Claude tier uses ${family(strong)} instead of ${family(top)}.`,
+      options: [
+        { key: 'k', label: `Keep ${family(strong)}`, apply() {} },
+        { key: 'r', label: `Use ${family(top)} again; my plan can use it now`, apply(target) {
+          const routes = record(record(target, 'routing'), 'claude');
+          delete routes.demanding;
+          if (!Object.keys(routes).length) delete record(target, 'routing').claude;
+          if (!Object.keys(record(target, 'routing')).length) delete target.routing;
+        } },
+      ],
+      fallback: 'k',
+    }];
+  }
+  return [];
+}

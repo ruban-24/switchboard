@@ -236,7 +236,13 @@ up the previous file to `policy.json.bak`. Plain `switchboard doctor` stays
 offline and never runs either CLI.
 
 Claude Code has no local model list, so `--fix` cannot check Claude model
-access. Your subscription's access is checked when a request is made.
+access automatically. Instead it asks whether your plan can use Fable, the
+highest Claude tier. Some Claude subscriptions require usage credits for Fable;
+its requests then fail with "Usage credits are required for this model." If
+your plan cannot use it, `--fix` routes the highest tier to Opus 5.5
+(`"routing": { "claude": { "demanding": "claude-opus" } }`). A later run offers
+to switch back to Fable. Start a new conversation after the change: an existing
+conversation keeps its saved model.
 
 ## Check a change and undo it
 
