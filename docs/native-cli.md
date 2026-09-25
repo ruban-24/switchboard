@@ -103,12 +103,12 @@ For example, `npm run switchboard -- codex resume CONVERSATION_ID`.
 
 If Claude reports "Usage credits are required for this model" on a new
 conversation, your plan cannot use the routed model (usually Fable) without
-usage credits. Run `switchboard doctor --fix` to route the highest Claude tier
+usage credits. Run `switchboard doctor` to route the highest Claude tier
 to Opus 5.5, then start a new conversation.
 
 If Claude reports that your Claude Code version does not support the model,
 run `claude update`. Opus 5.5 requires Claude Code 2.1.280 or newer. Until you
-update, `switchboard doctor --fix` can route its tiers to Opus 5 instead.
+update, `switchboard doctor` can route its tiers to Opus 5 instead.
 
 Start with `switchboard doctor` and `switchboard config check`. Neither makes an
 AI request. `doctor` checks that a key is present, not whether it works or has

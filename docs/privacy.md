@@ -36,7 +36,10 @@ Personal policy and routing state normally live under
 `~/.config/switchboard`. An absolute `XDG_CONFIG_HOME` or an explicit
 `SWITCHBOARD_HOME` changes the location; `switchboard doctor` reports it.
 
-- `policy.json` holds your overrides, not credentials.
+- `policy.json` holds your overrides, not credentials. Settings changes made by
+  `switchboard config` or `doctor` keep the previous file as `policy.json.bak`.
+- `doctor-state.json` records a confirmed answer to doctor's Claude plan
+  question (the model ID you chose to keep) so it is not asked again.
 - `connection.json` holds the provider, optional URL/model, and API key saved by
   interactive setup. Its permissions allow only your user to read or write it.
   The key is stored as plaintext, not encrypted; protect filesystem backups.

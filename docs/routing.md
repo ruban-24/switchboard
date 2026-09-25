@@ -100,14 +100,13 @@ For examples and all editable fields, see the [customization guide](customizatio
 ## Personal customization
 
 1. Run `switchboard init` once. Existing personal overrides are preserved.
-2. Run `switchboard doctor` to find your policy path; the default is
-   `~/.config/switchboard/policy.json`.
-3. Open that file in your editor and add only the overrides you want. Keep API
-   keys out of this file. Edit the existing JSON object rather than appending a
-   second one.
-4. Run `switchboard config check` to validate it, then `switchboard config show`
-   to inspect the effective defaults plus your changes.
-5. Exit the running CLI, relaunch with `switchboard claude` or `switchboard codex`,
+2. Run `switchboard config` for the settings menu, or
+   `switchboard config set <setting> <value>` for a single change. Both validate
+   before saving; see the [customization guide](customization.md).
+3. Run `switchboard config show` to inspect the effective defaults plus your
+   changes. Settings are stored in `~/.config/switchboard/policy.json` by
+   default; `switchboard doctor` reports the path.
+4. Exit the running CLI, relaunch with `switchboard claude` or `switchboard codex`,
    and start a new conversation. Configuration is loaded at launch. Existing
    conversations keep their saved model and effort even after relaunch/resume.
 

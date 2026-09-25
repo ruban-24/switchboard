@@ -111,8 +111,9 @@ Setup makes no AI calls. `doctor` checks your policy, enabled agents, and whethe
 a key is present; your first routed task tests the connection. If Codex reports
 that a routed model is missing, Claude reports "Usage credits are required
 for this model" for Fable, or your Claude Code is too old for Opus 5.5
-(2.1.280 or newer), `switchboard doctor --fix` walks you through the change
-without editing JSON.
+(2.1.280 or newer), run `switchboard doctor` in a terminal: it walks you
+through the fix. Use `switchboard config` to change models, effort limits, and
+other settings from a menu, without editing JSON.
 
 See [classifier connections](docs/classifiers.md) for endpoints,
 [privacy](docs/privacy.md) for what leaves your machine, and the
