@@ -19,14 +19,19 @@
 
 ### Setup and visibility
 
-- `switchboard doctor --fix` compares your policy with the models your installed
-  Codex offers and proposes changes, such as restoring a shipped route or
-  excluding a missing model. It also asks whether your Claude plan can use
-  Fable and, if not, routes the highest Claude tier to Opus 5.5. It asks before
-  saving and backs up `policy.json`.
+- `switchboard doctor`, run in a terminal, offers to fix what it finds after its
+  offline report. With your consent it compares your policy with the models your
+  installed Codex offers, then proposes changes such as restoring a shipped route
+  or skipping a missing model. It also asks once whether your Claude plan can use
+  Fable and, if not, routes the highest Claude tier to Opus 5.5. Changes are
+  shown and confirmed before saving, and the previous `policy.json` is backed up.
+  `doctor --fix` runs the same checks without asking first.
+- `switchboard config` opens a settings menu for models per tier, skipped
+  models, effort limits, agents, prompt history, and the classifier connection.
+  `switchboard config set|get|unset <setting>` changes one setting from the
+  shell. Both validate before writing, so policy JSON never needs hand editing.
 - `doctor` shows the effective automatic lineup for each enabled agent, and a
-  Codex launch that fails because a routed model is missing points to
-  `doctor --fix`.
+  Codex launch that fails because a routed model is missing points to `doctor`.
 - GPT-6 Luna and Sol require a Codex build that bundles them (0.156.1 or later).
 
 ## 0.1.0

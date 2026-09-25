@@ -1,6 +1,6 @@
 import { explainDecision } from './core/explanation.ts';
 import { constants } from 'node:fs';
-import { access, copyFile, readFile, stat } from 'node:fs/promises';
+import { access, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { delimiter, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -17,15 +17,20 @@ import { UsageStore } from './native/usage-store.ts';
 import { connectionEnvironment, credentialKeys, saveConnection, stateDirectory } from './settings.ts';
 import type { Connection } from './settings.ts';
 import { ask, choose, installProfileBlock, recommendedProfiles } from './setup.ts';
-import { nativeCodexModels, planClaudeFixes, planCodexFixes } from './doctor-fix.ts';
-import type { FixFinding } from './doctor-fix.ts';
+import { configMenu, doctorFixes } from './interactive.ts';
+import type { InteractiveContext } from './interactive.ts';
+import { describeChanges, effectivePolicy, getPath, parsePath, parseValue, readOverride, saveOverride, setPath, unsetPath } from './policy-edit.ts';
+import { PromptCancelled, interactive, terminalPrompter } from './prompts.ts';
 
 const help = `Switchboard — automatic model and effort routing
 
 Usage:
   switchboard init [--yes]
-  switchboard config show
-  switchboard config check
+  switchboard config            (interactive settings menu)
+  switchboard config show | check
+  switchboard config get <setting>
+  switchboard config set <setting> <value>
+  switchboard config unset <setting>
   switchboard doctor [--fix]
   switchboard claude [native arguments]
   switchboard codex [native arguments]
@@ -37,22 +42,8 @@ Personal settings: $SWITCHBOARD_HOME/policy.json, otherwise
 $XDG_CONFIG_HOME/switchboard/policy.json or ~/.config/switchboard/policy.json.
 `;
 
-async function personalOverride(root: string): Promise<{ override: Record<string, unknown>; exists: boolean; file: string }> {
-  const file = join(root, 'policy.json');
-  let raw: string;
-  try { raw = await readFile(file, 'utf8'); }
-  catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { override: {}, exists: false, file };
-    throw new Error(`Cannot read personal policy: ${file}`);
-  }
-  let override: unknown;
-  try { override = JSON.parse(raw); }
-  catch { throw new Error(`Personal policy is not valid JSON: ${file}`); }
-  return { override: v.object(override, 'policy'), exists: true, file };
-}
-
 async function configuration(root: string): Promise<{ policy: Policy; exists: boolean }> {
-  const { override, exists } = await personalOverride(root);
+  const { override, exists } = await readOverride(root);
   const policy = mergePolicy(defaultPolicy, override);
   validateMappings(policy, bundledCatalog);
   return { policy, exists };
@@ -184,7 +175,12 @@ async function init(root: string, args: string[]): Promise<number> {
   return 0;
 }
 
-async function doctor(root: string): Promise<number> {
+function interactiveContext(root: string): InteractiveContext {
+  return { root, defaults: defaultPolicy, catalog: bundledCatalog, prompter: terminalPrompter, log: message => console.log(message) };
+}
+
+async function doctor(root: string, fix: boolean): Promise<number> {
+  if (fix && !interactive()) throw new Error('switchboard doctor --fix is interactive; run it in a terminal.');
   const { policy, exists } = await configuration(root);
   const readiness = validateMappings(policy, bundledCatalog);
   console.log(`Personal policy: ${exists ? join(root, 'policy.json') : 'not initialized; using shipped defaults'}`);
@@ -195,58 +191,66 @@ async function doctor(root: string): Promise<number> {
   for (const tool of policy.enabledTools) console.log(`Automatic ${tool} lineup: ${routedFamilies(policy, bundledCatalog, tool).join(' → ')}`);
   console.log('Effort: fixed for each conversation. Native model aliases may still produce metadata warnings.');
   console.log('Native adapters: available for local foreground sessions; custom execution gateways/providers and remote/background modes are unsupported.');
-  console.log('Doctor made no network requests and did not run either CLI.');
-  console.log('To compare your policy with the models your installed Codex offers, run switchboard doctor --fix.');
-  return paths.every((path, index) => !policy.enabledTools.includes(v.tools[index]!) || !!path) && readiness.ready && credentialPresent ? 0 : 2;
-}
-
-function cancelled(): never {
-  throw new Error('doctor --fix cancelled; no changes written.');
-}
-
-async function doctorFix(root: string): Promise<number> {
-  if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error('switchboard doctor --fix is interactive; run it in a terminal.');
-  const { override, exists, file } = await personalOverride(root);
-  const policy = mergePolicy(defaultPolicy, override);
-  validateMappings(policy, bundledCatalog);
-  const findings: FixFinding[] = [];
-  if (policy.enabledTools.includes('claude')) {
-    console.log('Claude Code has no local model list, so plan access cannot be checked automatically.');
-    findings.push(...planClaudeFixes(policy, override, defaultPolicy, bundledCatalog));
+  console.log('The checks above made no network requests and did not run either CLI.');
+  const status = paths.every((path, index) => !policy.enabledTools.includes(v.tools[index]!) || !!path) && readiness.ready && credentialPresent ? 0 : 2;
+  if (!interactive()) {
+    console.log('Run switchboard doctor in a terminal to check your installed models and fix problems interactively.');
+    return status;
   }
-  if (policy.enabledTools.includes('codex')) {
-    const path = await executable('codex');
-    if (!path) console.log('codex is not installed or executable on PATH; skipping the Codex model check.');
-    else {
-      console.log('Reading the model list bundled with your installed Codex (local command, no network request)...');
-      const native = nativeCodexModels(await readCodexCatalog(path));
-      const codex = planCodexFixes(policy, override, native, defaultPolicy, bundledCatalog);
-      if (!codex.length) console.log('Codex offers every model your policy routes to.');
-      findings.push(...codex);
+  try {
+    await doctorFixes(interactiveContext(root), { explicit: fix, codexExecutable: paths[v.tools.indexOf('codex')] ?? null, readCodexModels: readCodexCatalog });
+  } catch (error) {
+    if (!(error instanceof PromptCancelled)) throw error;
+    console.log(error.message);
+  }
+  return status;
+}
+
+async function config(root: string, args: string[]): Promise<number> {
+  const [action, key, value, ...extra] = args;
+  if (!action) {
+    if (!interactive()) throw new Error('switchboard config opens an interactive menu; run it in a terminal, or use config get/set/unset.');
+    try { await configMenu(interactiveContext(root), async () => { await init(root, []); }); }
+    catch (error) {
+      if (!(error instanceof PromptCancelled)) throw error;
+      console.log(error.message);
     }
+    return 0;
   }
-  if (!findings.length) { console.log('No changes needed.'); return 0; }
-  const updated = structuredClone(override);
-  for (const finding of findings) {
-    console.log(`\n${finding.message}`);
-    for (const option of finding.options) console.log(`  ${option.key}) ${option.label}`);
-    const answer = await choose('Choose', finding.options.map(option => option.key), finding.fallback).catch(cancelled);
-    finding.options.find(option => option.key === answer)!.apply(updated);
+  if ((action === 'show' || action === 'check') && !key) {
+    const { policy } = await configuration(root);
+    if (action === 'show') { console.log(JSON.stringify(policy, null, 2)); return 0; }
+    const readiness = validateMappings(policy, bundledCatalog);
+    console.log('Policy is valid.');
+    if (!readiness.ready) { console.log(`Automatic routing is not configured: ${readiness.missing.join(', ')}`); return 2; }
+    console.log('Model/effort mappings are valid. Native integration readiness is reported by switchboard doctor.');
+    return 0;
   }
-  if (JSON.stringify(updated) === JSON.stringify(override)) { console.log('\nNo policy changes selected.'); return 0; }
-  const result = mergePolicy(defaultPolicy, updated);
-  const readiness = validateMappings(result, bundledCatalog);
-  if (!readiness.ready) throw new Error(`The selected changes leave routing unconfigured (${readiness.missing.join(', ')}); nothing was written.`);
-  console.log(`\nProposed personal policy (${file}):\n${JSON.stringify(updated, null, 2)}`);
-  if (await choose('Save these changes? y) Yes n) No', ['y', 'n'], 'y').catch(cancelled) === 'n') { console.log('No changes written.'); return 0; }
-  if (exists) {
-    await copyFile(file, `${file}.bak`);
-    console.log(`Backed up the previous policy to ${file}.bak.`);
+  if (action === 'get' && key && value === undefined) {
+    const { policy } = await configuration(root);
+    const current = getPath(policy, parsePath(key));
+    if (current === undefined) throw new Error(`Unknown setting: ${key}`);
+    console.log(typeof current === 'string' ? current : JSON.stringify(current, null, 2));
+    return 0;
   }
-  await atomicJsonWrite(file, updated);
-  await configuration(root);
-  console.log('Saved. Relaunch Switchboard and start a new conversation to use the updated policy. Existing conversations keep their saved model.');
-  return 0;
+  if ((action === 'set' && key && value !== undefined && !extra.length) || (action === 'unset' && key && value === undefined)) {
+    const personal = await readOverride(root);
+    effectivePolicy(defaultPolicy, bundledCatalog, personal.override);
+    const updated = structuredClone(personal.override);
+    const path = parsePath(key);
+    if (action === 'set') setPath(updated, path, parseValue(value!));
+    else if (!unsetPath(updated, path)) { console.log(`${key} is not set in your personal policy; the shipped default already applies.`); return 0; }
+    effectivePolicy(defaultPolicy, bundledCatalog, updated);
+    const changes = describeChanges(defaultPolicy, personal.override, updated);
+    if (!changes.length && JSON.stringify(updated) === JSON.stringify(personal.override)) { console.log('No change.'); return 0; }
+    const backup = await saveOverride(personal, updated);
+    for (const change of changes) console.log(change);
+    if (!changes.length) console.log(`${key} now matches the shipped default.`);
+    if (backup) console.log(`Previous policy backed up to ${backup}.`);
+    console.log('Relaunch Switchboard and start a new conversation to use it.');
+    return 0;
+  }
+  throw new Error('Usage: switchboard config [show | check | get <setting> | set <setting> <value> | unset <setting>]');
 }
 
 async function explain(root: string, args: string[]): Promise<number> {
@@ -307,7 +311,7 @@ async function launch(root: string, tool: Tool, args: string[]): Promise<number>
     try { codexCatalog = buildCodexCatalog(await readCodexCatalog(path), eligible); }
     catch (error) {
       const reason = error instanceof Error ? error.message.replace(/\.$/, '') : 'Cannot read the native Codex model catalog';
-      throw new Error(`${reason}. Run switchboard doctor --fix to review your policy, or update Codex.`);
+      throw new Error(`${reason}. Run switchboard doctor to review your policy, or update Codex.`);
     }
   }
   const proxy = await startProxy({ tool, root, policy, catalog: bundledCatalog, classify });
@@ -322,18 +326,9 @@ export async function main(args: string[]): Promise<number> {
     const root = stateDirectory();
     if (command === 'claude' || command === 'codex') return await launch(root, command, rest);
     if (command === 'init') return await init(root, rest);
-    if (command === 'doctor' && !rest.length) return await doctor(root);
-    if (command === 'doctor' && rest.length === 1 && rest[0] === '--fix') return await doctorFix(root);
+    if (command === 'doctor' && (!rest.length || (rest.length === 1 && rest[0] === '--fix'))) return await doctor(root, rest[0] === '--fix');
     if (command === 'explain') return await explain(root, rest);
-    if (command === 'config' && rest.length === 1 && ['show', 'check'].includes(rest[0]!)) {
-      const { policy } = await configuration(root);
-      if (rest[0] === 'show') { console.log(JSON.stringify(policy, null, 2)); return 0; }
-      const readiness = validateMappings(policy, bundledCatalog);
-      console.log('Policy is valid.');
-      if (!readiness.ready) { console.log(`Automatic routing is not configured: ${readiness.missing.join(', ')}`); return 2; }
-      console.log('Model/effort mappings are valid. Native integration readiness is reported by switchboard doctor.');
-      return 0;
-    }
+    if (command === 'config') return await config(root, rest);
     throw new Error('Unknown command or arguments. Run switchboard --help.');
   } catch (error) {
     // Never print an Error stack/cause: parser and transport causes can contain payloads.

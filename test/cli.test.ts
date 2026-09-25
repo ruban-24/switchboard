@@ -215,14 +215,14 @@ test('doctor --fix requires a terminal and never writes policy when redirected',
   await assert.rejects(readFile(join(s.config, 'policy.json')), { code: 'ENOENT' });
 });
 
-test('doctor lists the effective lineup and points to the guided fix', async t => {
+test('doctor lists the effective lineup and points to the interactive checks', async t => {
   const s = await sandbox(t);
   await mkdir(s.config, { recursive: true });
   await writeFile(join(s.config, 'policy.json'), '{"routing":{"codex":{"standard":"codex-terra"}}}\n');
   const result = s.cli('doctor');
   assert.match(result.stdout, /Automatic codex lineup: GPT-6 Luna → GPT-5\.6 Terra → GPT-6 Sol → GPT-6 Astra/);
   assert.match(result.stdout, /Automatic claude lineup: Haiku → Sonnet → Opus 5\.5 → Fable/);
-  assert.match(result.stdout, /doctor --fix/);
+  assert.match(result.stdout, /Run switchboard doctor in a terminal/);
 });
 
 test('codex launch explains how to recover when the installed Codex lacks a routed model', async t => {
@@ -231,6 +231,48 @@ test('codex launch explains how to recover when the installed Codex lacks a rout
   await writeFile(join(s.bin, 'codex'), `#!/bin/sh\nif [ "$1" = debug ]; then echo '${catalog}'; exit 0; fi\necho MUST-NOT-LAUNCH\n`, { mode: 0o755 });
   const result = s.cli('codex');
   assert.equal(result.status, 2);
-  assert.match(result.stderr, /gpt-6-sol.*missing.*switchboard doctor --fix/);
+  assert.match(result.stderr, /gpt-6-sol.*missing.*Run switchboard doctor to review/);
   assert.doesNotMatch(result.stdout + result.stderr, /MUST-NOT-LAUNCH|secret-do-not-print/);
+});
+
+test('config set, get, and unset edit personal policy without opening JSON', async t => {
+  const s = await sandbox(t);
+  const set = s.cli('config', 'set', 'routing.codex.standard', 'codex-terra');
+  assert.equal(set.status, 0, set.stderr);
+  assert.match(set.stdout, /routing\.codex\.standard: "codex-sol-balanced" → "codex-terra"/);
+  assert.deepEqual(JSON.parse(await readFile(join(s.config, 'policy.json'), 'utf8')), { routing: { codex: { standard: 'codex-terra' } } });
+  assert.equal(s.cli('config', 'get', 'routing.codex.standard').stdout.trim(), 'codex-terra');
+  const number = s.cli('config', 'set', 'classifier.modelMinConfidence', '0.8');
+  assert.equal(number.status, 0, number.stderr);
+  assert.match(number.stdout, /backed up/);
+  assert.equal(s.cli('config', 'get', 'classifier.modelMinConfidence').stdout.trim(), '0.8');
+  assert.equal(s.cli('config', 'unset', 'routing.codex.standard').status, 0);
+  assert.equal(s.cli('config', 'unset', 'classifier.modelMinConfidence').status, 0);
+  assert.deepEqual(JSON.parse(await readFile(join(s.config, 'policy.json'), 'utf8')), {});
+  assert.match(s.cli('config', 'unset', 'history.limit').stdout, /shipped default already applies/);
+});
+
+test('config set rejects invalid settings and leaves the policy untouched', async t => {
+  const s = await sandbox(t);
+  await mkdir(s.config, { recursive: true });
+  const personal = '{ "history": { "limit": 3 } }\n';
+  await writeFile(join(s.config, 'policy.json'), personal);
+  for (const args of [
+    ['routing.codex.standard', 'no-such-profile'], ['classifier.timeotMs', '5'], ['classifier.modelMinConfidence', '7'],
+    ['excludedModels.codex', '["gpt-6-luna","gpt-6-sol","gpt-6-astra"]'], ['__proto__.polluted', '1'],
+  ]) {
+    const result = s.cli('config', 'set', ...args);
+    assert.equal(result.status, 2, args.join(' '));
+    assert.match(result.stderr, /switchboard:/);
+  }
+  assert.equal(await readFile(join(s.config, 'policy.json'), 'utf8'), personal);
+  await assert.rejects(readFile(join(s.config, 'policy.json.bak')), { code: 'ENOENT' });
+  assert.equal(s.cli('config', 'get', 'nope.nothing').status, 2);
+});
+
+test('the interactive config menu requires a terminal', async t => {
+  const s = await sandbox(t);
+  const result = s.cli('config');
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /interactive menu/);
 });

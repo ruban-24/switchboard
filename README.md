@@ -110,8 +110,9 @@ with no alias or shell restart. Running setup again preserves your personal poli
 Setup makes no AI calls. `doctor` checks your policy, enabled agents, and whether
 a key is present; your first routed task tests the connection. If Codex reports
 that a routed model is missing, or Claude reports "Usage credits are required
-for this model" for Fable, `switchboard doctor --fix` walks you through the
-change without editing JSON.
+for this model" for Fable, run `switchboard doctor` in a terminal: it walks you
+through the fix. Use `switchboard config` to change models, effort limits, and
+other settings from a menu, without editing JSON.
 
 See [classifier connections](docs/classifiers.md) for endpoints,
 [privacy](docs/privacy.md) for what leaves your machine, and the
