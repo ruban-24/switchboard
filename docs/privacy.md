@@ -4,8 +4,9 @@ Switchboard runs a local routing proxy. It has no Switchboard account, analytics
 endpoint, or hosted service receiving prompts. Its source is licensed under
 Apache-2.0 so you can inspect the routing and forwarding behavior yourself.
 
-The current classifier is hosted. Running the proxy locally does not make
-classification offline or keep all task text on your machine.
+Jev, the default classifier, is hosted. Running the proxy locally does not
+make Jev classification offline or keep all task text on your machine. With a
+self-hosted Laya server, classification stays on the server you run.
 
 ## What leaves your machine
 
@@ -15,6 +16,7 @@ classification offline or keep all task text on your machine.
 | OpenRouter, if selected | The classification payload, sent through its TypeSafe-compatible endpoint to Jev |
 | Your custom classifier endpoint, if configured | The classification payload and key for the selected adapter |
 | Vercel AI Gateway, if selected | The same classification payload, sent through the Gateway to Jev |
+| Your Laya server, if selected | The classification payload and optional key; nothing leaves your machine when the server runs on it |
 | Your native coding provider | Native inference requests, including the conversation and tool context the coding CLI sends |
 
 Switchboard's classifier input contains task text, bounded to 16,000 characters
@@ -28,7 +30,8 @@ classification.
 Your selected provider's terms, logging, and retention rules apply to its
 requests. Switchboard makes no claim of zero retention by TypeSafe, OpenRouter, Vercel,
 Anthropic, or OpenAI. Disabling local prompt history does not disable hosted
-classification. A fully local classifier is not included in v0.
+classification. A Laya server on your machine keeps classification local; the
+native coding provider still receives inference requests.
 
 ## What is stored locally
 

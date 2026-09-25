@@ -101,7 +101,8 @@ npx --package=@ruban24/switchboard switchboard claude
 `switchboard init` walks you through three choices:
 
 1. Detect installed coding agents and choose which to enable.
-2. Select a Jev provider and enter your API key in a hidden prompt.
+2. Select a Jev provider and enter your API key in a hidden prompt, or point to
+   your own [Laya server](docs/classifiers.md#self-hosted-laya-experimental).
 3. Optionally add a configuration path to your shell profile.
 
 The key is saved in a file readable only by your user. You can launch immediately,
@@ -344,8 +345,9 @@ local history settings.
 Switchboard is fully open-source software, with no Switchboard backend receiving
 your prompts. You control the code, keys, policy, and local route history.
 
-- **Classification:** the hosted classifier receives extracted task text,
-  including any code or secrets you put in that prompt.
+- **Classification:** the classifier receives extracted task text, including
+  any code or secrets you put in that prompt. Jev is hosted; a self-hosted Laya
+  server keeps it on your own machine.
 - **Native inference:** requests go to your native provider.
 - **Local logging:** raw-prompt logging is off by default. Native transcripts
   and provider retention are separate.
@@ -359,7 +361,9 @@ Read [the data flow](docs/privacy.md) before using it with sensitive work.
 - **Agents:** Claude Code and Codex in local interactive CLI sessions.
 - **Platforms:** macOS and Linux. Both adapters have passed interactive validation
   on macOS and a Debian Linux VM with native sandboxing.
-- **Classifier:** Jev through TypeSafe, Vercel AI Gateway, or OpenRouter.
+- **Classifier:** Jev through TypeSafe, Vercel AI Gateway, or OpenRouter, or a
+  self-hosted [Laya](docs/classifiers.md#self-hosted-laya-experimental) server
+  (experimental).
 
 Native Windows, desktop-app routing, remote/background sessions, and custom
 model gateways are outside v0. See [native CLI compatibility](docs/native-cli.md)
@@ -377,7 +381,6 @@ for tested versions and limitations.
 
 ### System One models
 
-- Laya (coming soon)
 - Kev (coming soon)
 - Cua-S1 (coming soon)
 

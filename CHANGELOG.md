@@ -37,6 +37,14 @@
   Codex launch that fails because a routed model is missing points to `doctor`.
 - GPT-6 Luna and Sol require a Codex build that bundles them (0.156.1 or later).
 
+### Classifiers
+
+- Experimental self-hosted Laya support. Choose **Self-hosted Laya** in
+  `switchboard init` to classify with your own `laya-serve` (tested with Laya
+  0.3.20). A server on this machine needs no key; another host requires HTTPS
+  and a key. Laya receives a shorter question set that normalizes into the same
+  classification, and its routing quality is not yet evaluated.
+
 ## 0.1.0
 
 Switchboard's first release routes Claude Code and Codex conversations to a
