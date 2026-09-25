@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+### Routing
+
+- Claude Code's strong tier now uses Opus 5.5 (`claude-opus-5-5`).
+- Codex now routes to GPT-6 Luna, GPT-6 Sol, and GPT-6 Astra. GPT-6 has no Terra
+  model, so Sol serves both the balanced and strong tiers: the new
+  `codex-sol-balanced` profile defaults to medium reasoning when effort is
+  uncertain, and `codex-sol` keeps high. The shipped policy id is now
+  `default-v0.4`.
+- GPT-5.6 Luna, Terra, Sol, and Opus 5 stay in the catalog. Personal policies
+  that reference them remain valid, and `codex-terra` keeps Terra selectable while
+  Codex offers it. Existing conversations keep their saved model and effort.
+- Jev effort questions no longer name the model. They describe its capability
+  role, because the classifier cannot know models released after its training.
+  Code still binds each answer to its model.
+
+### Setup and visibility
+
+- `switchboard doctor --fix` compares your policy with the models your installed
+  Codex offers and proposes changes, such as restoring a shipped route or
+  excluding a missing model. It asks before saving and backs up `policy.json`.
+- `doctor` shows the effective automatic lineup for each enabled agent, and a
+  Codex launch that fails because a routed model is missing points to
+  `doctor --fix`.
+- GPT-6 Luna and Sol require a Codex build that bundles them (0.156.1 or later).
+
 ## 0.1.0
 
 Switchboard's first release routes Claude Code and Codex conversations to a
