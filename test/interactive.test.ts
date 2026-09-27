@@ -125,3 +125,17 @@ test('quitting or cancelling the config menu writes nothing', async t => {
   await assert.rejects(configMenu(cancelled.context, async () => {}), PromptCancelled);
   await assert.rejects(readFile(join(cancelled.root, 'policy.json')), { code: 'ENOENT' });
 });
+
+test('reset saves when the file only pins values equal to the shipped defaults', async t => {
+  const s = await setup(t, ['reset', true, 'save', true], { history: { limit: 20 } });
+  assert.equal(await configMenu(s.context, async () => {}), true);
+  assert.deepEqual(await s.saved(), {});
+});
+
+test('removing the effort limit from a custom profile writes a full uncapped mapping', async t => {
+  const capped = { low: 'low', medium: 'medium', high: 'medium', xhigh: 'medium', max: 'medium' };
+  const s = await setup(t, ['effort', 'codex', 'my-sol', 'none', 'save', true],
+    { profiles: { 'my-sol': { tool: 'codex', defaultReasoning: 'medium', model: 'gpt-6-sol', efforts: capped } } });
+  assert.equal(await configMenu(s.context, async () => {}), true);
+  assert.deepEqual((await s.saved()).profiles['my-sol'].efforts, { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'max' });
+});

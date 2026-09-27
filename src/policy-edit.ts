@@ -95,13 +95,27 @@ function leaves(value: unknown, prefix: string[], out: Map<string, string>): voi
   } else out.set(prefix.join('.'), JSON.stringify(value));
 }
 
-/** Human-readable effective changes between two overrides, e.g. `routing.codex.standard: "a" → "b"`. */
+/**
+ * Human-readable changes between two overrides, e.g. `routing.codex.standard: "a" → "b"`.
+ * Settings that only change whether the file pins a value equal to the shipped default are
+ * listed too, so removing such a pin still counts as a change to save.
+ */
 export function describeChanges(defaults: Policy, before: Override, after: Override): string[] {
   const old = new Map<string, string>();
   const updated = new Map<string, string>();
   leaves(mergePolicy(defaults, before), [], old);
   leaves(mergePolicy(defaults, after), [], updated);
   const keys = [...new Set([...old.keys(), ...updated.keys()])].sort();
-  return keys.filter(key => old.get(key) !== updated.get(key))
-    .map(key => `${key}: ${old.get(key) ?? '(none)'} → ${updated.get(key) ?? '(none)'}`);
+  const effective = keys.filter(key => old.get(key) !== updated.get(key));
+  const rawOld = new Map<string, string>();
+  const rawNew = new Map<string, string>();
+  leaves(before, [], rawOld);
+  leaves(after, [], rawNew);
+  const covered = (key: string) => effective.some(changed => changed === key || changed.startsWith(`${key}.`) || key.startsWith(`${changed}.`));
+  const pins = [...new Set([...rawOld.keys(), ...rawNew.keys()])].sort()
+    .filter(key => rawOld.get(key) !== rawNew.get(key) && !covered(key))
+    .map(key => rawNew.has(key)
+      ? `${key}: pinned at ${rawNew.get(key)} (the shipped default today)`
+      : `${key}: follows the shipped default (${updated.get(key) ?? rawOld.get(key)})`);
+  return [...effective.map(key => `${key}: ${old.get(key) ?? '(none)'} → ${updated.get(key) ?? '(none)'}`), ...pins];
 }

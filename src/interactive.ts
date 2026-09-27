@@ -193,11 +193,12 @@ export async function configMenu(context: InteractiveContext, runConnectionSetup
         { value: 'none', label: 'No limit' },
         ...v.reasoning.slice(0, -1).map(level => ({ value: level, label: `Up to ${level}` })),
       ], current === null || current === 'custom' ? 'none' : current);
-      unsetPath(draft, ['profiles', profile, 'efforts']);
-      if (cap !== 'none') {
-        const capIndex = v.reasoning.indexOf(cap);
-        setPath(draft, ['profiles', profile, 'efforts'], Object.fromEntries(v.reasoning.map((level, index) => [level, v.reasoning[Math.min(index, capIndex)]])));
-      }
+      const capIndex = cap === 'none' ? v.reasoning.length - 1 : v.reasoning.indexOf(cap);
+      const mapping = Object.fromEntries(v.reasoning.map((level, index) => [level, v.reasoning[Math.min(index, capIndex)]]));
+      // A shipped profile inherits its uncapped mapping; a profile you created has nothing to
+      // inherit, so "No limit" writes the full mapping instead of removing the field.
+      if (cap === 'none' && context.defaults.profiles[profile]) unsetPath(draft, ['profiles', profile, 'efforts']);
+      else setPath(draft, ['profiles', profile, 'efforts'], mapping);
     }
     try {
       effectivePolicy(context.defaults, context.catalog, draft);
