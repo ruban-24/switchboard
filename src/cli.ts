@@ -97,7 +97,7 @@ async function init(root: string, args: string[]): Promise<number> {
   if (!args.includes('--yes')) {
     const found = await Promise.all(v.tools.map(executable));
     v.tools.forEach((tool, index) => console.log(`${tool}: ${found[index] ? 'found on PATH' : 'not found on PATH'}`));
-    if (current.exists) console.log(`Personal policy preserved: ${file}. Edit enabledTools there to change agents.`);
+    if (current.exists) console.log(`Personal policy preserved: ${file}. Run switchboard config to change agents or other settings.`);
     else {
       const fallback = found[0] && !found[1] ? '1' : found[1] && !found[0] ? '2' : '3';
       const answer = await choose('Enable 1) Claude 2) Codex 3) Both', ['1', '2', '3'], fallback);

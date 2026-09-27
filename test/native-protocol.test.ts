@@ -51,9 +51,9 @@ test('Codex rejects future automatic request kinds', () => {
   assert.equal(parseNativeRequest('codex', '/responses', {}, { model: 'switchboard', client_metadata: { 'x-codex-turn-metadata': JSON.stringify(meta) } }).kind, 'unknown');
 });
 
-test('Codex title detection requires system origin and the native naming instruction', () => {
+test('Codex title detection requires a title origin and the native naming instruction', () => {
   const instructions = 'Generate a concise, single-line task title of at most 36 characters and under five words where possible. Start with an imperative verb.';
-  for (const source of ['system', 'user', undefined]) {
+  for (const source of ['system', 'thread_title', 'user', undefined]) {
     for (const instruction of [instructions, 'Review the code.']) {
       const meta = { thread_id: 'thread', turn_id: 'turn', request_kind: 'turn', thread_source: source };
       for (const inHeader of [false, true]) {
@@ -62,7 +62,7 @@ test('Codex title detection requires system origin and the native naming instruc
           client_metadata: inHeader ? {} : { 'x-codex-turn-metadata': JSON.stringify(meta) },
           input: [{ role: 'user', content: [{ type: 'input_text', text: 'Generate a concise, single-line task title of at most 36 characters' }] }],
         });
-        const title = source === 'system' && instruction === instructions;
+        const title = (source === 'system' || source === 'thread_title') && instruction === instructions;
         assert.equal(result.kind, title ? 'auxiliary' : 'user');
         assert.equal(result.auxiliaryType, title ? 'title' : undefined);
       }
@@ -78,6 +78,20 @@ test('Codex recognizes the observed system title with its naming instruction in 
     assert.equal(result.kind, source === 'system' ? 'auxiliary' : 'user');
     assert.equal(result.auxiliaryType, source === 'system' ? 'title' : undefined);
   }
+});
+
+test('Codex title requests marked thread_title never start a routed conversation', () => {
+  // Observed request shape: developer instructions, then the naming instruction in the last user message.
+  const naming = 'Generate a concise, single-line task title of at most 36 characters and under five words where possible. Start with an imperative verb. Capitalize only the first word.';
+  const input = [...Array.from({ length: 5 }, () => ({ role: 'developer', content: 'native instructions' })),
+    { role: 'user', content: [{ type: 'input_text', text: '<environment_context>' }] },
+    { role: 'user', content: [{ type: 'input_text', text: `${naming}\n\nTask: private task` }] }];
+  const meta = { thread_id: 'thread', turn_id: 'turn', request_kind: 'turn', thread_source: 'thread_title' };
+  const result = parseNativeRequest('codex', '/responses', {}, { model: 'switchboard', input, client_metadata: { 'x-codex-turn-metadata': JSON.stringify(meta) } });
+  assert.deepEqual([result.kind, result.auxiliaryType, result.task], ['auxiliary', 'title', '']);
+  const typed = parseNativeRequest('codex', '/responses', {}, { model: 'switchboard', input: [...input.slice(0, 6), { role: 'user', content: [{ type: 'input_text', text: 'private task' }] }],
+    client_metadata: { 'x-codex-turn-metadata': JSON.stringify(meta) } });
+  assert.equal(typed.kind, 'user', 'thread_title without the native naming instruction is still a user turn');
 });
 
 test('Claude tool result tails are continuations and human text is isolated', () => {
