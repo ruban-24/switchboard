@@ -82,6 +82,10 @@ Then choose **Self-hosted Laya** in `switchboard init`. The defaults are
   neutral `A`/`B` labels), and one model-agnostic effort question. The source is
   in [`src/laya-questions.ts`](../src/laya-questions.ts). Answers become the same
   classification as Jev's, and the policy is unchanged.
+- **Task length:** Laya silently cuts a task that does not fit its input.
+  Switchboard sends at most 700 characters, which always fit, and treats a
+  longer task as lacking context, so a new conversation uses the uncertain
+  fallback instead of a route based on the task's beginning.
 - **Confidence:** Switchboard reads Laya's `answer_confidence`, the calibrated
   probability of the chosen answer. It ignores Laya's `confidence` field, which
   measures entropy on a different scale.

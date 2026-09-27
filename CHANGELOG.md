@@ -43,7 +43,8 @@
   `switchboard init` to classify with your own `laya-serve` (tested with Laya
   0.3.20). A server on this machine needs no key; another host requires HTTPS
   and a key. Laya receives a shorter question set that normalizes into the same
-  classification, and its routing quality is not yet evaluated.
+  classification, and its routing quality is not yet evaluated. Tasks longer
+  than the 700 characters Laya reliably reads use the uncertain fallback.
 
 ## 0.1.0
 

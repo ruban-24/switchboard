@@ -118,3 +118,33 @@ test('Laya cancellation reaches the transport and hides the abort reason', async
   controller.abort(new Error('private-abort-reason'));
   await assert.rejects(pending, /^Error: Laya classification failed$/);
 });
+
+test('a task longer than Laya reads is sent cut and marked as insufficient context', async t => {
+  const tasks: string[] = [];
+  t.mock.method(globalThis, 'fetch', async (_url: string, init: RequestInit) => {
+    tasks.push(JSON.parse(String(init.body)).state.task);
+    return Response.json(response());
+  });
+  const classify = createConfiguredClassifier({ SWITCHBOARD_PROVIDER: 'laya' });
+  assert.equal((await classify('x'.repeat(700), new AbortController().signal, context)).sufficientContext, true);
+  const long = await classify('y'.repeat(701), new AbortController().signal, context);
+  assert.equal(tasks[1]!.length, 700);
+  assert.equal(long.sufficientContext, false);
+  assert.equal(selectInitialRoute(defaultPolicy, bundledCatalog, 'claude', long).profile, 'claude-opus');
+});
+
+test('an oversized Laya response is abandoned while streaming, before it is buffered', async t => {
+  let pulls = 0;
+  let cancelled = false;
+  const chunk = new Uint8Array(64 * 1024);
+  t.mock.method(globalThis, 'fetch', async () => new Response(new ReadableStream({
+    pull(controller) { pulls++; controller.enqueue(chunk); },
+    cancel() { cancelled = true; },
+  })));
+  const classify = createConfiguredClassifier({ SWITCHBOARD_PROVIDER: 'laya' });
+  await assert.rejects(classify('task', new AbortController().signal, context), /^Error: Laya classification failed$/);
+  assert.equal(cancelled, true);
+  assert.ok(pulls <= 6, `read ${pulls} chunks`);
+  t.mock.method(globalThis, 'fetch', async () => new Response('{}', { headers: { 'content-length': String(1024 * 1024) } }));
+  await assert.rejects(classify('task', new AbortController().signal, context), /^Error: Laya classification failed$/);
+});
