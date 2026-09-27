@@ -17,8 +17,9 @@ import { UsageStore } from './native/usage-store.ts';
 import { connectionEnvironment, credentialKeys, saveConnection, stateDirectory } from './settings.ts';
 import type { Connection } from './settings.ts';
 import { ask, choose, installProfileBlock, recommendedProfiles } from './setup.ts';
-import { nativeCodexModels, planClaudeFixes, planCodexFixes } from './doctor-fix.ts';
-import type { FixFinding } from './doctor-fix.ts';
+import { nativeCodexModels, planClaudeFixes, planClaudeVersionFixes, planCodexFixes, resolveFindings } from './doctor-fix.ts';
+import { readClaudeCodeVersion } from './native/claude-version.ts';
+import type { FixPlanner } from './doctor-fix.ts';
 
 const help = `Switchboard — automatic model and effort routing
 
@@ -209,10 +210,15 @@ async function doctorFix(root: string): Promise<number> {
   const { override, exists, file } = await personalOverride(root);
   const policy = mergePolicy(defaultPolicy, override);
   validateMappings(policy, bundledCatalog);
-  const findings: FixFinding[] = [];
+  const planners: FixPlanner[] = [];
   if (policy.enabledTools.includes('claude')) {
+    const path = await executable('claude');
+    const version = path ? await readClaudeCodeVersion(path) : null;
+    if (!path) console.log('claude is not installed or executable on PATH; skipping the Claude Code version check.');
+    else if (!version) console.log('Could not read the Claude Code version; skipping the Claude Code version check.');
+    else planners.push((current, edits) => planClaudeVersionFixes(current, edits, version, defaultPolicy, bundledCatalog));
     console.log('Claude Code has no local model list, so plan access cannot be checked automatically.');
-    findings.push(...planClaudeFixes(policy, override, defaultPolicy, bundledCatalog));
+    planners.push((current, edits) => planClaudeFixes(current, edits, defaultPolicy, bundledCatalog));
   }
   if (policy.enabledTools.includes('codex')) {
     const path = await executable('codex');
@@ -220,19 +226,16 @@ async function doctorFix(root: string): Promise<number> {
     else {
       console.log('Reading the model list bundled with your installed Codex (local command, no network request)...');
       const native = nativeCodexModels(await readCodexCatalog(path));
-      const codex = planCodexFixes(policy, override, native, defaultPolicy, bundledCatalog);
-      if (!codex.length) console.log('Codex offers every model your policy routes to.');
-      findings.push(...codex);
+      if (!planCodexFixes(policy, override, native, defaultPolicy, bundledCatalog).length) console.log('Codex offers every model your policy routes to.');
+      planners.push((current, edits) => planCodexFixes(current, edits, native, defaultPolicy, bundledCatalog));
     }
   }
-  if (!findings.length) { console.log('No changes needed.'); return 0; }
-  const updated = structuredClone(override);
-  for (const finding of findings) {
+  const { updated, asked } = await resolveFindings(planners, override, defaultPolicy, async finding => {
     console.log(`\n${finding.message}`);
     for (const option of finding.options) console.log(`  ${option.key}) ${option.label}`);
-    const answer = await choose('Choose', finding.options.map(option => option.key), finding.fallback).catch(cancelled);
-    finding.options.find(option => option.key === answer)!.apply(updated);
-  }
+    return choose('Choose', finding.options.map(option => option.key), finding.fallback).catch(cancelled);
+  });
+  if (!asked) { console.log('No changes needed.'); return 0; }
   if (JSON.stringify(updated) === JSON.stringify(override)) { console.log('\nNo policy changes selected.'); return 0; }
   const result = mergePolicy(defaultPolicy, updated);
   const readiness = validateMappings(result, bundledCatalog);

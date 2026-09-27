@@ -20,10 +20,12 @@
 ### Setup and visibility
 
 - `switchboard doctor --fix` compares your policy with the models your installed
-  Codex offers and proposes changes, such as restoring a shipped route or
-  excluding a missing model. It also asks whether your Claude plan can use
-  Fable and, if not, routes the highest Claude tier to Opus 5.5. It asks before
-  saving and backs up `policy.json`.
+  Codex offers and proposes changes. For a missing GPT-6 model it defaults to the
+  previous generation until you update Codex; excluding the model instead names
+  the tier it would move to. It checks that Claude Code is new enough for
+  Opus 5.5 (2.1.280 or later) and otherwise offers Opus 5. It also asks whether
+  your Claude plan can use Fable and, if not, routes the highest Claude tier to
+  Opus 5.5. It asks before saving and backs up `policy.json`.
 - `doctor` shows the effective automatic lineup for each enabled agent, and a
   Codex launch that fails because a routed model is missing points to
   `doctor --fix`.

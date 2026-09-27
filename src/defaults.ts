@@ -63,6 +63,19 @@ export const bundledCatalog: Catalog = {
   compatibility: [],
 };
 
+// The previous-generation model doctor --fix offers while an installed CLI cannot run a
+// routed model yet. Each pair shares a capability role and supported efforts.
+export const previousGeneration: Readonly<Record<string, string>> = {
+  [modelTiers.claude.complex]: 'claude-opus-5',
+  [modelTiers.codex.routine]: 'gpt-5.6-luna',
+  [modelTiers.codex.standard]: 'gpt-5.6-sol',
+};
+
+// Oldest Claude Code release that accepts each model; older releases reject it with HTTP 400.
+export const minimumClaudeCode: Readonly<Record<string, string>> = {
+  [modelTiers.claude.complex]: '2.1.280',
+};
+
 /** Default automatic lineup, derived from the shipped routing so it cannot drift from it. */
 export const eligibleFamilies: Record<Tool, readonly string[]> = {
   claude: routedFamilies(defaultPolicy, bundledCatalog, 'claude'),

@@ -229,11 +229,20 @@ classifier-unavailable fallback rule.
 `switchboard doctor --fix` compares your policy with the models your installed
 Codex offers. It runs `codex debug models --bundled`, a local command, and makes
 no AI request. For each routed model Codex lacks, it offers to restore the
-shipped route (when you had changed it), exclude the model, or keep the policy
-and update Codex yourself. It also offers to lift an exclusion for a model Codex
-now offers. It shows the resulting `policy.json`, asks before saving, and backs
-up the previous file to `policy.json.bak`. Plain `switchboard doctor` stays
-offline and never runs either CLI.
+shipped route (when you had changed it), use the previous-generation model for
+those tiers until you update Codex (GPT-5.6 Luna for GPT-6 Luna, GPT-5.6 Sol for
+GPT-6 Sol), keep the policy and update Codex yourself, or exclude the model.
+Excluding moves those tiers to the next eligible model, often a stronger and
+more expensive one, so the option names the model they would use. A later run
+offers to return to the current model once Codex offers it, and to lift an
+exclusion for a model Codex now offers. It shows the resulting `policy.json`,
+asks before saving, and backs up the previous file to `policy.json.bak`. Plain
+`switchboard doctor` stays offline and never runs either CLI.
+
+`--fix` also runs `claude --version`, another local command. Opus 5.5 requires
+Claude Code 2.1.280 or newer; older releases reject its requests. If yours is
+older, `--fix` offers Opus 5 for the tiers Opus 5.5 serves until you run
+`claude update`, and a later run offers Opus 5.5 again.
 
 Claude Code has no local model list, so `--fix` cannot check Claude model
 access automatically. Instead it asks whether your plan can use Fable, the
