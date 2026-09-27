@@ -61,6 +61,12 @@ The first start downloads about 800 MB from Hugging Face. Add `LAYA_DEVICE=mps`
 on Apple silicon or `LAYA_DEVICE=cuda` with an NVIDIA GPU. Without `LAYA_HOST`,
 `laya-serve` listens on every network interface.
 
+Keep `laya-serve` running in its own terminal while you use Switchboard, and
+stop it with Ctrl-C. If the server is not reachable, a new conversation uses the
+[uncertain fallback](routing.md) at high effort. To run Laya in the background,
+use the Docker Compose files or NixOS module described in the
+[Laya repository](https://github.com/NandhaKishorM/laya).
+
 Then choose **Self-hosted Laya** in `switchboard init`. The defaults are
 `http://127.0.0.1:8000` and the `english` model.
 
