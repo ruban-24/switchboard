@@ -32,8 +32,8 @@ test('one request selects effort for the model chosen after personal exclusions'
     calls++;
     const body = JSON.parse(String(init.body));
     assert.equal(Object.keys(body.questions).length, 5);
-    assert.match(body.questions.effort_0.instructions, /claude-sonnet-5/);
-    assert.match(body.questions.effort_1.instructions, /claude-opus-5/);
+    assert.match(body.questions.effort_0.instructions, /Ordinary bounded development/);
+    assert.match(body.questions.effort_1.instructions, /resolving uncertain causes/);
     assert.doesNotMatch(JSON.stringify(body), /claude-fable-5-1|gpt-5/);
     const result = response('demanding');
     delete (result.answers as Record<string, unknown>).effort_2;
@@ -44,10 +44,10 @@ test('one request selects effort for the model chosen after personal exclusions'
   const classification = await classify('Design the migration', new AbortController().signal, { tool: 'claude', policy, catalog: bundledCatalog });
   const route = assessInitialRoute(policy, bundledCatalog, 'claude', classification);
   assert.equal(calls, 1);
-  assert.equal(classification.effortModel, 'claude-opus-5');
+  assert.equal(classification.effortModel, 'claude-opus-5-5');
   assert.equal(classification.reasoning, 'medium');
   assert.equal(classification.confidences.effort, .93);
-  assert.deepEqual(route.selection, { profile: 'claude-opus', model: 'claude-opus-5', effort: 'medium', excludedModel: 'claude-fable-5-1' });
+  assert.deepEqual(route.selection, { profile: 'claude-opus', model: 'claude-opus-5-5', effort: 'medium', excludedModel: 'claude-fable-5-1' });
 });
 
 test('model confidence floor uses balanced effort instead of the fast-model answer', async t => {
@@ -113,7 +113,7 @@ test('Router supplies its effective tool policy and keeps a model-aware route pi
     repository: { async load() { return state; }, async save(value) { state = value; } },
     classify: createVercelJevClassifier('fixture-key') });
   const first = await router.routeTurn({ tool: 'claude', conversationId: 'model-aware', turnId: 'one', kind: 'user', task: 'Review the race' });
-  assert.equal(first.selection.model, 'claude-opus-5');
+  assert.equal(first.selection.model, 'claude-opus-5-5');
   assert.equal(first.selection.effort, 'medium');
   const next = await router.routeTurn({ tool: 'claude', conversationId: 'model-aware', turnId: 'two', kind: 'tool', task: '' });
   assert.deepEqual(next.selection, first.selection);
@@ -124,12 +124,13 @@ test('all 36 pairs survive one-call classification, Router policy, and native re
   const models = [
     ['claude', 'routine', 'claude-haiku-4-5-20251001', null],
     ['claude', 'standard', 'claude-sonnet-5', 0],
-    ['claude', 'complex', 'claude-opus-5', 1],
+    ['claude', 'complex', 'claude-opus-5-5', 1],
     ['claude', 'demanding', 'claude-fable-5-1', 2],
-    ['codex', 'routine', 'gpt-5.6-luna', 0],
-    ['codex', 'standard', 'gpt-5.6-terra', 1],
-    ['codex', 'complex', 'gpt-5.6-sol', 2],
-    ['codex', 'demanding', 'gpt-6-astra', 3],
+    ['codex', 'routine', 'gpt-6-luna', 0],
+    // Sol serves both middle tiers, so one effort question covers both.
+    ['codex', 'standard', 'gpt-6-sol', 1],
+    ['codex', 'complex', 'gpt-6-sol', 1],
+    ['codex', 'demanding', 'gpt-6-astra', 2],
   ] as const;
   let calls = 0;
   let nextResponse: unknown;
@@ -141,7 +142,7 @@ test('all 36 pairs survive one-call classification, Router policy, and native re
         sufficientContext: { type: 'choice', choice: 'true' },
       };
       const confidence: Record<string, number> = { taskType: .95, complexity: .95, sufficientContext: .95 };
-      for (let q = 0; q < (tool === 'claude' ? 3 : 4); q++) {
+      for (let q = 0; q < 3; q++) {
         answers[`effort_${q}`] = { type: 'choice', choice: q === index ? effort : effort === 'low' ? 'max' : 'low' };
         confidence[`effort_${q}`] = q === index ? .95 : .99;
       }
@@ -177,7 +178,7 @@ test('effort bound to another model is never reused after the eligible model cha
   assert.equal(classification.reasoning, 'max');
   const changed = mergePolicy(defaultPolicy, { excludedModels: { claude: ['claude-fable-5-1'] } });
   const route = assessInitialRoute(changed, bundledCatalog, 'claude', classification);
-  assert.equal(route.selection.model, 'claude-opus-5');
+  assert.equal(route.selection.model, 'claude-opus-5-5');
   assert.equal(route.selection.effort, 'high');
   assert.deepEqual(route.adjustments, ['effort-unavailable']);
 });
@@ -191,7 +192,7 @@ test('reused model profiles ask once and apply the selected profile effort cap',
   t.mock.method(globalThis, 'fetch', async (_url: string, init: RequestInit) => {
     const request = JSON.parse(String(init.body));
     assert.equal(Object.keys(request.questions).length, 4);
-    assert.match(request.questions.effort_0.instructions, /claude-sonnet-5/);
+    assert.match(request.questions.effort_0.instructions, /Ordinary bounded development/);
     const value = response('complex');
     value.answers.effort_0.choice = 'max';
     for (const key of ['effort_1', 'effort_2']) {
@@ -208,7 +209,7 @@ test('reused model profiles ask once and apply the selected profile effort cap',
 });
 
 test('Haiku-only personal policy has no effort questions and disabled tools fail before a request', () => {
-  const policy = mergePolicy(defaultPolicy, { excludedModels: { claude: ['claude-sonnet-5', 'claude-opus-5', 'claude-fable-5-1'] } });
+  const policy = mergePolicy(defaultPolicy, { excludedModels: { claude: ['claude-sonnet-5', 'claude-opus-5-5', 'claude-fable-5-1'] } });
   const request = buildJevQuestions({ tool: 'claude', policy, catalog: bundledCatalog });
   assert.deepEqual(Object.keys(request.questions), ['taskType', 'complexity', 'sufficientContext']);
   assert.deepEqual(request.candidates, []);

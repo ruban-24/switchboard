@@ -165,10 +165,10 @@ test('route mutation preserves cached content and removes only Haiku-incompatibl
 });
 
 test('supported Claude and Codex routes set only model and compatible effort fields', () => {
-  const claude = applyRoute('claude', '/v1/messages', { model: 'switchboard', output_config: { trace: true }, thinking: { type: 'enabled', budget_tokens: 4096 } }, { profile: 'x', model: 'claude-opus-5', effort: 'xhigh' });
-  assert.deepEqual(claude, { model: 'claude-opus-5', output_config: { trace: true, effort: 'xhigh' }, thinking: { type: 'adaptive' } });
-  const compact = applyRoute('codex', '/responses/compact', { model: 'switchboard', input: ['cached'] }, { profile: 'x', model: 'gpt-5.6-sol', effort: 'high' });
-  assert.deepEqual(compact, { model: 'gpt-5.6-sol', input: ['cached'] });
+  const claude = applyRoute('claude', '/v1/messages', { model: 'switchboard', output_config: { trace: true }, thinking: { type: 'enabled', budget_tokens: 4096 } }, { profile: 'x', model: 'claude-opus-5-5', effort: 'xhigh' });
+  assert.deepEqual(claude, { model: 'claude-opus-5-5', output_config: { trace: true, effort: 'xhigh' }, thinking: { type: 'adaptive' } });
+  const compact = applyRoute('codex', '/responses/compact', { model: 'switchboard', input: ['cached'] }, { profile: 'x', model: 'gpt-6-sol', effort: 'high' });
+  assert.deepEqual(compact, { model: 'gpt-6-sol', input: ['cached'] });
 });
 
 test('Haiku preserves context management properties when no edits exist', () => {

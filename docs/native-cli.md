@@ -1,6 +1,6 @@
 # Native CLI integration
 
-Interactive integration was verified with Claude Code 2.1.278 and Codex 0.155.1
+Interactive integration was verified with Claude Code 2.1.283 and Codex 0.157.1
 on macOS and Debian 12 ARM64 with native sandboxing. CLI updates can change
 hook, request, or model-catalog behavior; these are tested versions, not a
 guarantee of compatibility with every version.
@@ -100,6 +100,15 @@ From the source checkout, replace `switchboard` with `npm run switchboard --`.
 For example, `npm run switchboard -- codex resume CONVERSATION_ID`.
 
 ## Troubleshooting
+
+If Claude reports "Usage credits are required for this model" on a new
+conversation, your plan cannot use the routed model (usually Fable) without
+usage credits. Run `switchboard doctor --fix` to route the highest Claude tier
+to Opus 5.5, then start a new conversation.
+
+If Claude reports that your Claude Code version does not support the model,
+run `claude update`. Opus 5.5 requires Claude Code 2.1.280 or newer. Until you
+update, `switchboard doctor --fix` can route its tiers to Opus 5 instead.
 
 Start with `switchboard doctor` and `switchboard config check`. Neither makes an
 AI request. `doctor` checks that a key is present, not whether it works or has

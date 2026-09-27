@@ -29,7 +29,7 @@ test('Vercel uses the evaluation API with the shared questions and separate Type
   });
   const result = await createVercelJevClassifier('gateway-secret')('Build a parser', new AbortController().signal, context);
   assert.deepEqual(result, {
-    taskType: 'implement', complexity: 'complex', reasoning: 'xhigh', sufficientContext: true, confidences: { model: .82, effort: .71, context: .65, taskType: .94 }, effortModel: 'claude-opus-5',
+    taskType: 'implement', complexity: 'complex', reasoning: 'xhigh', sufficientContext: true, confidences: { model: .82, effort: .71, context: .65, taskType: .94 }, effortModel: 'claude-opus-5-5',
     diagnostics: { provider: 'vercel', requestedModel: 'typesafe-ai/jev', resolvedModel: null, probabilities: { model: null, context: { true: .99, false: .01 }, effort: null } },
   });
   assert.equal(calls.length, 1);

@@ -106,3 +106,10 @@ export function validateMappings(policy: Policy, catalog: Catalog, selectedTool?
   }
   return { ready: missing.length === 0, missing };
 }
+
+/** Distinct routed model families from lowest to highest tier, omitting excluded models. */
+export function routedFamilies(policy: Policy, catalog: Catalog, tool: Tool): string[] {
+  const models = v.tiers.map(tier => policy.profiles[policy.routing[tool][tier] ?? '']?.model)
+    .filter((model): model is string => model !== undefined && !policy.excludedModels[tool].includes(model));
+  return [...new Set(models)].map(id => catalog.models.find(model => model.id === id && model.tool === tool)?.family ?? id);
+}

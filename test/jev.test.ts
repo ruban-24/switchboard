@@ -53,8 +53,13 @@ test('constructs one request with a separate effort question for each eligible m
   assert.deepEqual(Object.keys(complexity.criteria), ['routine', 'standard', 'complex', 'demanding']);
   for (const criterion of Object.values(complexity.criteria)) assert.ok(typeof criterion === 'string' && criterion.trim());
   assert.deepEqual(Object.keys(reasoning.criteria), ['low', 'medium', 'high', 'xhigh', 'max']);
-  assert.match(String(questions.effort_1!.instructions), /claude-opus-5/);
-  assert.doesNotMatch(JSON.stringify(questions), /gpt-/i);
+  // Effort questions describe the owner-defined role, never a model name the classifier may not know.
+  assert.match(String(questions.effort_1!.instructions), /resolving uncertain causes/);
+  const text = JSON.stringify(questions);
+  for (const model of bundledCatalog.models) {
+    assert.ok(!text.includes(model.id), `question text names ${model.id}`);
+    assert.ok(!text.includes(model.family), `question text names ${model.family}`);
+  }
 });
 
 test('context question distinguishes estimating difficulty from implementation readiness', async () => {
@@ -69,7 +74,7 @@ test('context question distinguishes estimating difficulty from implementation r
 test('preserves separate answer confidence without collapsing it into the lowest score', async () => {
   const xhigh = await createJevClassifier('test-key', fakeClient(result()))('task', new AbortController().signal, context);
   assert.deepEqual(xhigh, {
-    taskType: 'implement', complexity: 'complex', reasoning: 'xhigh', sufficientContext: true, confidences: { model: .82, effort: .71, context: .88, taskType: .94 }, effortModel: 'claude-opus-5',
+    taskType: 'implement', complexity: 'complex', reasoning: 'xhigh', sufficientContext: true, confidences: { model: .82, effort: .71, context: .88, taskType: .94 }, effortModel: 'claude-opus-5-5',
     diagnostics: { provider: 'typesafe', requestedModel: 'jev-latest', resolvedModel: null, probabilities: { model: null, context: null, effort: null } },
   });
 
@@ -78,7 +83,7 @@ test('preserves separate answer confidence without collapsing it into the lowest
     sufficientContext: answer('false', 0.79),
   })))('task', new AbortController().signal, context);
   assert.deepEqual(max, {
-    taskType: 'implement', complexity: 'complex', reasoning: 'max', sufficientContext: false, confidences: { model: .82, effort: .67, context: .79, taskType: .94 }, effortModel: 'claude-opus-5',
+    taskType: 'implement', complexity: 'complex', reasoning: 'max', sufficientContext: false, confidences: { model: .82, effort: .67, context: .79, taskType: .94 }, effortModel: 'claude-opus-5-5',
     diagnostics: { provider: 'typesafe', requestedModel: 'jev-latest', resolvedModel: null, probabilities: { model: null, context: null, effort: null } },
   });
 });
