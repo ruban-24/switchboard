@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { Store } from '../storage.ts';
 import { AUTO_MODEL } from './protocol.ts';
+import { classifierSecretKeys } from '../settings.ts';
 
 const inputLimit = 1024 * 1024;
 const outputLimit = 64 * 1024;
@@ -56,7 +57,7 @@ let stopChild = () => {};
 async function existingOutput(command: string | undefined, input: Buffer): Promise<Buffer> {
   if (!command) return Buffer.alloc(0);
   const env = { ...process.env };
-  for (const key of ['OPENROUTER_API_KEY', 'SWITCHBOARD_API_KEY', 'JEV_API_KEY', 'TYPESAFE_API_KEY', 'AI_GATEWAY_API_KEY']) delete env[key];
+  for (const key of classifierSecretKeys) delete env[key];
   return new Promise(resolve => {
     // A detached process group lets the deadline also stop pipelines and child
     // processes. Preserve the inherited working directory and original stdin.

@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { isDeepStrictEqual } from 'node:util';
+import { classifierSecretKeys } from '../settings.ts';
 
 const AGREEMENT_FIELDS = ['shell_type', 'apply_patch_tool_type', 'tool_mode', 'web_search_tool_type'] as const;
 const MINIMUM_FIELDS = ['context_window', 'max_context_window', 'effective_context_window_percent'] as const;
@@ -72,7 +73,7 @@ export function buildCodexCatalog(value: unknown, eligible: string[]): { models:
   return { models: [alias, ...models.filter(model => model.slug !== ALIAS_SLUG)] };
 }
 
-const SECRET_ENV_KEYS = new Set(['JEV_API_KEY', 'TYPESAFE_API_KEY', 'AI_GATEWAY_API_KEY', 'OPENROUTER_API_KEY', 'SWITCHBOARD_API_KEY']);
+const SECRET_ENV_KEYS = new Set(classifierSecretKeys);
 
 export async function readCodexCatalog(executable: string): Promise<unknown> {
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !SECRET_ENV_KEYS.has(key)));

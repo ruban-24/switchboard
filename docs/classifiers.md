@@ -1,7 +1,9 @@
 # Classifier connections
 
-Switchboard currently supports Jev. Choose **TypeSafe**, **Vercel AI Gateway**,
-**OpenRouter**, or a **TypeSafe-compatible endpoint** during `switchboard init`.
+Switchboard supports Jev and, experimentally, a self-hosted Laya server. For
+Jev, choose **TypeSafe**, **Vercel AI Gateway**, **OpenRouter**, or a
+**TypeSafe-compatible endpoint** during `switchboard init`; for Laya, see
+[Self-hosted Laya](#self-hosted-laya-experimental).
 Enter the API key at the hidden prompt. Setup saves it in a private
 `connection.json` beside your policy, so subsequent launches need no exports.
 
@@ -36,9 +38,64 @@ error behavior. An OpenAI-compatible chat-completions endpoint is not enough.
 URLs require HTTPS, with HTTP allowed for loopback development servers. URLs
 containing credentials, query parameters, or fragments are rejected.
 
-Laya, Kev, and Cua-s1 support is planned. Each needs an adapter that normalizes
+Kev and Cua-s1 support is planned. Each needs an adapter that normalizes
 its outputs into Switchboard's classification format. Changing the model ID in
 setup does not provide that adapter.
+
+## Self-hosted Laya (experimental)
+
+[Laya](https://github.com/NandhaKishorM/laya) is Convai Innovations'
+open-weights System One model. It has no official hosted API: you run its
+`laya-serve` server, and task text goes only to that server. Switchboard is
+tested with Laya 0.3.20 and its `english` checkpoint.
+
+On macOS or Linux with Python 3.10 or newer:
+
+```sh
+python3 -m venv ~/.local/share/laya/.venv
+~/.local/share/laya/.venv/bin/python -m pip install "laya[serve]==0.3.20"
+LAYA_HOST=127.0.0.1 LAYA_MODELS=english LAYA_PRELOAD=1 ~/.local/share/laya/.venv/bin/laya-serve
+```
+
+The first start downloads about 800 MB from Hugging Face. Add `LAYA_DEVICE=mps`
+on Apple silicon or `LAYA_DEVICE=cuda` with an NVIDIA GPU. Without `LAYA_HOST`,
+`laya-serve` listens on every network interface.
+
+Keep `laya-serve` running in its own terminal while you use Switchboard, and
+stop it with Ctrl-C. If the server is not reachable, a new conversation uses the
+[uncertain fallback](routing.md) at high effort. To run Laya in the background,
+use the Docker Compose files or NixOS module described in the
+[Laya repository](https://github.com/NandhaKishorM/laya).
+
+Then choose **Self-hosted Laya** in `switchboard init`. The defaults are
+`http://127.0.0.1:8000` and the `english` model.
+
+- **Keys:** a server on this machine may run without a key. If you start
+  `laya-serve` with `LAYA_API_KEY`, enter the same key during setup. A server on
+  another host must use HTTPS and a key. Alternatively, reach it through an SSH
+  tunnel (`ssh -L 8000:127.0.0.1:8000 host`), which counts as this machine.
+  As with other providers, an exported `SWITCHBOARD_API_KEY` is the key for the
+  selected connection, so Switchboard sends it to your Laya server.
+- **Questions:** the English checkpoint reads 512 tokens and can follow
+  `true`/`false` labels instead of their descriptions. Laya therefore receives
+  a shorter question set: task type, capability tier, sufficient context (with
+  neutral `A`/`B` labels), and one model-agnostic effort question. The source is
+  in [`src/laya-questions.ts`](../src/laya-questions.ts). Answers become the same
+  classification as Jev's, and the policy is unchanged.
+- **Task length:** Laya silently cuts a task that does not fit its input.
+  Switchboard sends at most 700 characters, which always fit, and treats a
+  longer task as lacking context, so a new conversation uses the uncertain
+  fallback instead of a route based on the task's beginning.
+- **Confidence:** Switchboard reads Laya's `answer_confidence`, the calibrated
+  probability of the chosen answer. It ignores Laya's `confidence` field, which
+  measures entropy on a different scale.
+- **Routing quality:** not yet evaluated against Jev. In early synthetic
+  checks, Laya chose sensible capability tiers, but its confidence stayed below
+  the default `0.70` thresholds. Routine tasks were therefore raised to the
+  standard tier, and effort used at least each model's default. Its effort
+  answers carry little signal so far. Lowering `modelMinConfidence` or
+  `effortMinConfidence` in your policy makes Laya's answers count more often,
+  without evidence yet that they are accurate.
 
 ## Request and response examples
 
@@ -139,7 +196,7 @@ local development environment, use:
 
 | Variable | Purpose |
 | --- | --- |
-| `SWITCHBOARD_PROVIDER` | `typesafe`, `openrouter`, or `vercel`. Defaults to the saved provider, then `typesafe`. |
+| `SWITCHBOARD_PROVIDER` | `typesafe`, `openrouter`, `vercel`, or `laya`. Defaults to the saved provider, then `typesafe`. |
 | `SWITCHBOARD_API_KEY` | Key for the selected connection; takes precedence over provider-specific names. |
 | `SWITCHBOARD_BASE_URL` | Override the selected adapter's base URL. |
 | `SWITCHBOARD_MODEL` | Override the classifier model ID. |
@@ -147,6 +204,7 @@ local development environment, use:
 | `TYPESAFE_DEFAULT_MODEL` / `TYPESAFE_BASE_URL` | TypeSafe-only alternatives to the generic model and URL overrides. |
 | `OPENROUTER_API_KEY` | OpenRouter key. |
 | `AI_GATEWAY_API_KEY` | Vercel AI Gateway key. |
+| `LAYA_API_KEY` | Key for a `laya-serve` started with the same variable. |
 
 Nonempty environment values take precedence over the saved connection. Blank
 placeholders in environment files are ignored. Selecting another

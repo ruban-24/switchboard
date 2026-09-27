@@ -39,7 +39,7 @@ test('all launch paths remove classifier credentials while retaining native cred
     for (const args of [[], ['--help']]) {
       const result = await prepareNativeLaunch({ tool, args, home: s.home, env: {
         JEV_API_KEY: 'jev-secret', TYPESAFE_API_KEY: 'typesafe-secret', AI_GATEWAY_API_KEY: 'gateway-secret',
-        SWITCHBOARD_API_KEY: 'switchboard-secret', OPENROUTER_API_KEY: 'openrouter-secret',
+        SWITCHBOARD_API_KEY: 'switchboard-secret', OPENROUTER_API_KEY: 'openrouter-secret', LAYA_API_KEY: 'laya-secret',
         ANTHROPIC_API_KEY: 'native-claude-secret', OPENAI_API_KEY: 'native-codex-secret',
       } });
       try {
@@ -48,6 +48,7 @@ test('all launch paths remove classifier credentials while retaining native cred
         assert.equal(result.env.AI_GATEWAY_API_KEY, undefined);
         assert.equal(result.env.SWITCHBOARD_API_KEY, undefined);
         assert.equal(result.env.OPENROUTER_API_KEY, undefined);
+        assert.equal(result.env.LAYA_API_KEY, undefined);
         assert.equal(result.env.ANTHROPIC_API_KEY, 'native-claude-secret');
         assert.equal(result.env.OPENAI_API_KEY, 'native-codex-secret');
       } finally { await result.cleanup(); }
