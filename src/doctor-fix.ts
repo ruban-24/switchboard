@@ -70,6 +70,16 @@ function clearProfileModel(target: Override, profiles: string[]): void {
   if (!Object.keys(overrides).length) delete target.profiles;
 }
 
+function restoreResolves(defaults: Policy, catalog: Catalog, override: Override, restore: (target: Override) => void,
+  model: string, restored: RouteGroup[], available: Set<string>): boolean {
+  const edited = structuredClone(override);
+  restore(edited);
+  if (!ready(defaults, catalog, edited)) return false;
+  const policy = mergePolicy(defaults, edited);
+  return routesUsing(policy, 'codex', model).groups.length === 0
+    && restored.every(group => available.has(policy.profiles[policy.routing.codex[group] ?? '']?.model ?? ''));
+}
+
 /** Families that would serve the given groups once `model` is excluded. */
 function substitutes(defaults: Policy, catalog: Catalog, tool: Tool, override: Override, groups: RouteGroup[]): string[] {
   const policy = mergePolicy(defaults, override);
@@ -124,13 +134,16 @@ export function planCodexFixes(policy: Policy, override: Override, native: strin
     const options: FixOption[] = [];
     const restorable = groups.filter(group => overriddenRoutes[group] !== undefined
       && available.has(defaults.profiles[defaults.routing.codex[group] ?? '']?.model ?? ''));
-    if (restorable.length) {
-      options.push({ key: 'r', label: `Restore the shipped route for ${restorable.join(', ')}`, apply(target) {
-        const routes = record(record(target, 'routing'), 'codex');
-        for (const group of restorable) delete routes[group];
-        if (!Object.keys(routes).length) delete record(target, 'routing').codex;
-        if (!Object.keys(record(target, 'routing')).length) delete target.routing;
-      } });
+    const restore = (target: Override) => {
+      const routes = record(record(target, 'routing'), 'codex');
+      for (const group of restorable) delete routes[group];
+      if (!Object.keys(routes).length) delete record(target, 'routing').codex;
+      if (!Object.keys(record(target, 'routing')).length) delete target.routing;
+    };
+    // Offer a restore only when it clears the missing model from every route: a profile
+    // override can keep another group on it, and the restored routes must be runnable.
+    if (restorable.length && restoreResolves(defaults, catalog, override, restore, model, restorable, available)) {
+      options.push({ key: 'r', label: `Restore the shipped route for ${restorable.join(', ')}`, apply: restore });
     }
     const previous = previousGeneration[model];
     const swapped = structuredClone(override);

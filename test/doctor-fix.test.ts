@@ -84,6 +84,15 @@ test('a personal route to a model Codex dropped can return to the shipped route'
   assert.deepEqual(choose(override, ['gpt-6-luna', 'gpt-6-sol', 'gpt-6-astra'], ['r']), { history: { limit: 3 } });
 });
 
+test('restore is withheld when a profile override would keep another route on the missing model', () => {
+  const override = { profiles: { 'codex-sol-balanced': { model: 'gpt-5.6-terra' } }, routing: { codex: { complex: 'codex-sol-balanced' } } };
+  const [finding, ...rest] = plan(override, current.filter(model => model !== 'gpt-5.6-terra'));
+  assert.equal(rest.length, 0);
+  assert.match(finding!.message, /gpt-5\.6-terra.*standard, complex/);
+  assert.ok(!finding!.options.some(option => option.key === 'r'));
+  assert.deepEqual(finding!.options.map(option => option.key), ['k', 'e']);
+});
+
 test('keeping the policy unchanged is always available and writes nothing', () => {
   const override = { routing: { codex: { standard: 'codex-terra' } } };
   assert.deepEqual(choose(override, ['gpt-6-luna', 'gpt-6-sol', 'gpt-6-astra'], ['k']), override);
