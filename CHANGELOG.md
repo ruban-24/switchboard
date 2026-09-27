@@ -36,6 +36,9 @@
 - `doctor` shows the effective automatic lineup for each enabled agent, and a
   Codex launch that fails because a routed model is missing points to `doctor`.
 - GPT-6 Luna and Sol require a Codex build that bundles them (0.156.1 or later).
+- Codex's automatic task-title request is recognized again, so it no longer
+  costs an extra classifier call per conversation. Setup now points to
+  `switchboard config` for changing agents.
 
 ### Classifiers
 

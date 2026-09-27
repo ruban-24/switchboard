@@ -184,7 +184,9 @@ export function parseNativeRequest(tool: Tool, path: string, headers: Headers, v
   const compact = requestKind === 'compaction' || /\/responses\/compact(?:\?|$)/.test(path);
   const tail = Array.isArray(body.input) ? object(body.input.at(-1)) : {};
   const continuation = tail.type === 'function_call_output' || tail.type === 'custom_tool_call_output';
-  const title = !helper && !compact && !continuation && requestKind === 'turn' && threadSource === 'system' && isCodexTaskTitle(body);
+  // Codex 0.156 and earlier mark the title request as a system thread; 0.157 uses thread_title.
+  const titleSource = threadSource === 'system' || threadSource === 'thread_title';
+  const title = !helper && !compact && !continuation && requestKind === 'turn' && titleSource && isCodexTaskTitle(body);
   const knownAuxiliary = title || helper || continuation || ['prewarm', 'memory'].includes(requestKind);
   const kind = compact ? 'compact' : knownAuxiliary ? 'auxiliary' : requestKind === 'turn' ? 'user' : 'unknown';
   return { automatic: true, conversationId, turnId, kind, task: kind === 'user' ? inputText(body.input) : '', endpoint: compact ? 'compact' : /\/responses(?:\?|$)/.test(path) ? 'responses' : 'other', ...(text(canonical.parent_thread_id) ? { ownerConversationId: text(canonical.parent_thread_id) } : {}), ...(title ? { auxiliaryType: 'title' as const } : helper ? { auxiliaryType: 'helper' as const } : continuation ? { auxiliaryType: 'continuation' as const } : ['prewarm', 'memory'].includes(requestKind) ? { auxiliaryType: 'prewarm' as const } : {}) };
