@@ -57,7 +57,7 @@ A real routed task consumes classifier credits and native provider quota.
 
 ## Supported platforms
 
-| Platform | Switchboard v0.1.0 status |
+| Platform | Switchboard v0.2.0 status |
 | --- | --- |
 | macOS | Native interactive CLI adapters verified. |
 | Linux | Native interactive CLI adapters verified in a Debian 12 ARM64 VM. |
