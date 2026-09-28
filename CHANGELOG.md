@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
 ### Routing
 
@@ -13,9 +13,9 @@
 - GPT-5.6 Luna, Terra, Sol, and Opus 5 stay in the catalog. Personal policies
   that reference them remain valid, and `codex-terra` keeps Terra selectable while
   Codex offers it. Existing conversations keep their saved model and effort.
-- Jev effort questions no longer name the model. They describe its capability
-  role, because the classifier cannot know models released after its training.
-  Code still binds each answer to its model.
+- Jev questions describe capability requirements without naming executor
+  models. Routing supports four capability tiers and retains conservative
+  fallbacks when context or confidence is insufficient.
 
 ### Setup and visibility
 

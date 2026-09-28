@@ -55,6 +55,16 @@ routing criteria currently emphasize software engineering.
   Switchboard telemetry or hosted routing service. Hosted Jev receives task
   text through your own API key; see [privacy and data flow](docs/privacy.md).
 
+## Measured routing overhead
+
+| Metric | Measured result |
+| --- | --- |
+| Median Jev classification latency | **0.55 seconds** |
+| p95 Jev classification latency | **0.67 seconds** |
+| Normalized cost per 1,000 classifications | **About US$0.62**, including reporting tags |
+
+*Classifier requests only. Actual latency and cost vary.*
+
 <a name="get-started"></a>
 
 ## ⚡ Get started
