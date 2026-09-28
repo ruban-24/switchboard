@@ -25,9 +25,9 @@
 </p>
 
 Switchboard automatically selects a model and reasoning effort for Claude Code
-and Codex using Jev's task assessment and your routing policy. It runs inside
-the coding CLI you already use, keeping the selected pair fixed through
-follow-ups, tool calls, and resume.
+and Codex. Jev or experimental self-hosted Laya assesses the task; your routing
+policy makes the final choice. It runs inside the coding CLI you already use,
+keeping the selected pair fixed through follow-ups, tool calls, and resume.
 
 Use it for implementation, debugging, code review, and documentation. You can
 also route writing, research, and other tasks inside those CLIs; the default
@@ -41,19 +41,19 @@ routing criteria currently emphasize software engineering.
 
 *A real Codex session: submit a task and see Switchboard's model and effort choice.*
 
-- **Task-aware decisions.** Powered by Jev, a System One model built for fast,
-  structured judgments. The routing policy is independent of the classifier;
-  see [future support](#future-support) for planned additions.
+- **Task-aware decisions.** Use hosted Jev, the default System One classifier,
+  or experimental [self-hosted Laya](#self-hosted-laya-router-experimental)
+  for structured task judgments. Your routing policy selects the model and effort.
 - **Stable conversations.** Model and effort stay fixed through tool calls,
   follow-ups, and resume. A new conversation gets a fresh routing decision.
 - **Your policy.** Use the defaults, exclude unavailable models, or customize
   model tiers, effort caps, confidence thresholds, and fallback behavior.
 - **Open source and free to use.** Apache-2.0. All Switchboard routing code is
   available to inspect, change, and run yourself. No Switchboard account or
-  subscription; classifier and native-provider usage are billed separately.
+  subscription; hosted classifier and native-provider usage are billed separately.
 - **Local control.** The proxy and route history run on your machine. No
-  Switchboard telemetry or hosted routing service. Hosted Jev receives task
-  text through your own API key; see [privacy and data flow](docs/privacy.md).
+  Switchboard telemetry or hosted routing service. Classification runs through
+  your chosen Jev provider or Laya server; see [privacy and data flow](docs/privacy.md).
 
 ## Measured routing overhead
 
@@ -76,7 +76,8 @@ You need:
 - **Claude Code or Codex, installed and signed in.** Follow the
   [Claude Code quickstart](https://code.claude.com/docs/en/quickstart) or
   [Codex CLI setup](https://developers.openai.com/codex/cli) first.
-- **A Jev API key** from TypeSafe, Vercel AI Gateway, or OpenRouter.
+- **A Jev API key** from TypeSafe, Vercel AI Gateway, or OpenRouter, **or a
+  self-hosted Laya server** (experimental). See [Laya setup](#self-hosted-laya-router-experimental).
 
 Switchboard uses your agent's existing login and does not install the agent for
 you. Choose one package manager for your global installation.
@@ -115,8 +116,9 @@ npx --package=@ruban24/switchboard switchboard claude
    your own [Laya server](docs/classifiers.md#self-hosted-laya-experimental).
 3. Optionally add a configuration path to your shell profile.
 
-The key is saved in a file readable only by your user. You can launch immediately,
-with no alias or shell restart. Running setup again preserves your personal policy.
+If your connection uses a key, it is saved in a file readable only by your user.
+You can launch immediately, with no alias or shell restart. Running setup again
+preserves your personal policy.
 
 Setup makes no AI calls. `doctor` checks your policy, enabled agents, and whether
 a key is present; your first routed task tests the connection. If Codex reports
@@ -130,6 +132,22 @@ See [classifier connections](docs/classifiers.md) for endpoints,
 [privacy](docs/privacy.md) for what leaves your machine, and the
 [installation guide](docs/distribution.md) for shell profiles, environment
 overrides, updates, and removal.
+
+### Self-hosted Laya router (experimental)
+
+Run Laya on your machine to keep task classification local, then choose
+**Self-hosted Laya** during `switchboard init`. Switchboard applies the same
+routing policy and pins the chosen model and effort for the conversation.
+Your existing Claude Code or Codex login still handles coding inference.
+
+The tested setup uses Laya 0.3.20 with the English checkpoint. Tasks longer than
+700 characters use the uncertain fallback for a new conversation. Low-confidence
+answers retain conservative policy behavior; routing quality against Jev has
+not yet been evaluated. Running Laya yourself avoids hosted classifier API
+charges; hardware, hosting and coding-provider costs still apply.
+
+Read the [Laya router guide for Claude Code and Codex](https://tryswitchboard.dev/laya-router/)
+for an overview, or follow the [local server setup](docs/classifiers.md#self-hosted-laya-experimental).
 
 ### Run from source
 
@@ -356,8 +374,9 @@ Switchboard is fully open-source software, with no Switchboard backend receiving
 your prompts. You control the code, keys, policy, and local route history.
 
 - **Classification:** the classifier receives extracted task text, including
-  any code or secrets you put in that prompt. Jev is hosted; a self-hosted Laya
-  server keeps it on your own machine.
+  any code or secrets you put in that prompt. Jev is hosted; with Laya running
+  on your machine, classification stays local. A remote Laya server receives
+  the task on the host you configure.
 - **Native inference:** requests go to your native provider.
 - **Local logging:** raw-prompt logging is off by default. Native transcripts
   and provider retention are separate.
