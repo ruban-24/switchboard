@@ -4,6 +4,23 @@
 
 <h1 align="center">Switchboard</h1>
 
+## Project status
+
+> [!IMPORTANT]
+> **This project has been retired and is no longer maintained.**
+
+I built Switchboard as an experimental prototype to explore what System One
+models could do for AI routing. Through my testing and following developments
+in the community, I concluded that this approach wasn’t reliable enough for
+coding tools. A task’s complexity depends heavily on the surrounding code and
+conversation, and can be very different from what the prompt alone suggests.
+
+I still see potential for this approach in routing everyday AI tasks, but I’m
+retiring Switchboard as a coding router.
+
+The source and documentation remain available for reference and forks. The
+documentation below describes the project as it stood at retirement.
+
 <p align="center">
   <a href="https://www.npmjs.com/package/@ruban24/switchboard"><img src="https://img.shields.io/npm/v/@ruban24/switchboard?style=flat&amp;label=npm&amp;color=brightgreen&amp;labelColor=24292f" alt="npm version"></a>
   <a href="https://github.com/ruban-24/switchboard/actions/workflows/verify.yml"><img src="https://github.com/ruban-24/switchboard/actions/workflows/verify.yml/badge.svg?branch=main" alt="CI status"></a>
@@ -21,7 +38,7 @@
   <a href="#get-started">Get started</a> &middot;
   <a href="#how-model-and-reasoning-effort-routing-works">How it works</a> &middot;
   <a href="docs/customization.md">Customize your policy</a> &middot;
-  <a href="CONTRIBUTING.md">Contribute</a>
+  <a href="#project-status">Project status</a>
 </p>
 
 Switchboard automatically selects a model and reasoning effort for Claude Code
@@ -403,28 +420,17 @@ for tested versions and limitations.
 <a name="coding-agents"></a>
 <a name="agent-integrations"></a>
 
-### Planned agent integrations
+The previously planned Pi, OpenCode, Kev, and Cua-S1 integrations will not be
+developed as part of this project.
 
-- Pi (coming soon)
-- OpenCode (coming soon)
+## Reference and support
 
-### System One models
-
-- Kev (coming soon)
-- Cua-S1 (coming soon)
-
-Each classifier needs an adapter for its judgments and confidence format.
-A new endpoint alone does not make a different model compatible.
-
-## Contribute and support
-
-- **Contribute code or report a routing problem:** start with
-  [CONTRIBUTING.md](CONTRIBUTING.md) for setup, checks, and native adapter guidance.
-  Run `npm test` and `npm run test:package` before submitting a code change.
-- **Report a vulnerability:** follow [SECURITY.md](SECURITY.md).
+- **Explore or fork the code:** [CONTRIBUTING.md](CONTRIBUTING.md) records the
+  development setup, checks, and native adapter guidance.
 - **Read release notes:** see [CHANGELOG.md](CHANGELOG.md).
+- **Review the license:** see [LICENSE](LICENSE).
 
-If you would like to support development, you can sponsor me or buy me a coffee.
+If Switchboard was useful to you, you can support what I build next.
 
 <p>
   <a href="https://github.com/sponsors/ruban-24"><img src="https://img.shields.io/badge/GitHub-Sponsors-ea4aaa?style=flat&amp;logo=githubsponsors&amp;logoColor=white&amp;labelColor=24292f" alt="Support Ruban on GitHub Sponsors"></a>
@@ -441,3 +447,4 @@ If you would like to support development, you can sponsor me or buy me a coffee.
 <p align="center">
   If Switchboard helped you, please <a href="https://github.com/ruban-24/switchboard">give it a star ⭐</a>.
 </p>
+
